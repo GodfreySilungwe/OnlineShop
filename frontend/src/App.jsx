@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Routes, Route, Link } from 'react-router-dom'
 import Menu from './components/Menu'
+import ItemDetail from './components/ItemDetail'
+import Cart from './components/Cart'
 import { CartProvider } from './context/CartContext'
 
 function App() {
@@ -23,7 +25,8 @@ function App() {
       <main className="app-main">
         <Routes>
           <Route path="/" element={<Menu categories={categories} />} />
-          <Route path="/cart" element={<div>Cart (coming soon)</div>} />
+          <Route path="/item/:id" element={<ItemDetail />} />
+          <Route path="/cart" element={<Cart />} />
         </Routes>
       </main>
     </CartProvider>

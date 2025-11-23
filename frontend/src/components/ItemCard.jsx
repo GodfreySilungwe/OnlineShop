@@ -1,4 +1,5 @@
 import React from 'react'
+import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 
 export default function ItemCard({ item }) {
@@ -6,11 +7,15 @@ export default function ItemCard({ item }) {
 
   return (
     <div className="item-card">
-      <h3>{item.name}</h3>
+      <h3>
+        <Link to={`/item/${item.id}`}>{item.name}</Link>
+      </h3>
       <p className="muted">{item.description}</p>
       <div className="item-row">
         <strong>{(item.price_cents / 100).toFixed(2)}</strong>
-        <button onClick={() => addToCart(item, 1)}>Add</button>
+        <div>
+          <button onClick={() => addToCart(item, 1)}>Add</button>
+        </div>
       </div>
     </div>
   )
