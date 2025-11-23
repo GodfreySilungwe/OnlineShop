@@ -20,6 +20,7 @@ function App() {
       <header className="app-header">
         <Link to="/">Home</Link>
         <Link to="/cart">Cart</Link>
+        <Link to="/admin">Admin</Link>
       </header>
 
       <main className="app-main">
@@ -27,6 +28,12 @@ function App() {
           <Route path="/" element={<Menu categories={categories} />} />
           <Route path="/item/:id" element={<ItemDetail />} />
           <Route path="/cart" element={<Cart />} />
+          <Route path="/admin" element={
+            // lazy import AdminDashboard to avoid loading admin code in normal user flows
+            <React.Suspense fallback={<div>Loading admin…</div>}>
+              <AdminDashboardLazy />
+            </React.Suspense>
+          } />
         </Routes>
       </main>
     </CartProvider>
@@ -34,3 +41,6 @@ function App() {
 }
 
 export default App
+
+// lazy-load admin dashboard
+const AdminDashboardLazy = React.lazy(() => import('./components/AdminDashboard'))
