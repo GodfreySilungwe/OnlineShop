@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { useCart } from '../context/CartContext'
 
 export default function Cart() {
-  const { items, clearCart } = useCart()
+  const { items, clearCart, addToCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [orderId, setOrderId] = useState(null)
   const [customer, setCustomer] = useState({ customer_name: '', customer_email: '', customer_phone: '' })
@@ -42,6 +42,8 @@ export default function Cart() {
     }
   }
 
+  // promotions removed from Cart; promos are shown on main Menu page now
+
   if (orderId)
     return (
       <div>
@@ -51,39 +53,51 @@ export default function Cart() {
     )
 
   return (
-    <div>
-      <h2>Cart</h2>
-      {items.length === 0 && <p>Your cart is empty</p>}
-      <ul>
-        {items.map((it) => (
-          <li key={it.id}>
-            {it.name} x {it.qty} — {(it.price_cents / 100).toFixed(2)} each
-          </li>
-        ))}
-      </ul>
-      <p>
-        <strong>Total: </strong>
-        {(totalCents / 100).toFixed(2)}
-      </p>
+    <div className="cart">
+      <main className="cart-main">
+        <h2>Cart</h2>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+          <div className="muted-small">{items.length === 0 ? 'Your cart is empty' : `${items.length} item(s)`}</div>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            <button type="button" className="btn" onClick={() => {
+              if (!items.length) return
+              if (window.confirm('Clear cart?')) clearCart()
+            }}>Clear cart</button>
+          </div>
+        </div>
 
-      <form onSubmit={handleCheckout} style={{ maxWidth: 480 }}>
-        <div>
-          <label>Name</label>
-          <input value={customer.customer_name} onChange={(e) => setCustomer({ ...customer, customer_name: e.target.value })} />
-        </div>
-        <div>
-          <label>Email</label>
-          <input value={customer.customer_email} onChange={(e) => setCustomer({ ...customer, customer_email: e.target.value })} />
-        </div>
-        <div>
-          <label>Phone</label>
-          <input value={customer.customer_phone} onChange={(e) => setCustomer({ ...customer, customer_phone: e.target.value })} />
-        </div>
-        {error && <div style={{ color: 'red' }}>{error}</div>}
-        <div style={{ marginTop: 12 }}>
-          <button type="submit" disabled={loading || items.length === 0}>{loading ? 'Processing...' : 'Checkout'}</button>
-        </div>
-      </form>
+        <ul>
+          {items.map((it) => (
+            <li key={it.id} style={{ marginBottom: 8 }}>
+              {it.name} x {it.qty} — {(it.price_cents / 100).toFixed(2)} each
+            </li>
+          ))}
+        </ul>
+
+        <p>
+          <strong>Total: </strong>
+          {(totalCents / 100).toFixed(2)}
+        </p>
+
+        <form onSubmit={handleCheckout} style={{ maxWidth: 480 }}>
+          <div>
+            <label>Name</label>
+            <input value={customer.customer_name} onChange={(e) => setCustomer({ ...customer, customer_name: e.target.value })} />
+          </div>
+          <div>
+            <label>Email</label>
+            <input value={customer.customer_email} onChange={(e) => setCustomer({ ...customer, customer_email: e.target.value })} />
+          </div>
+          <div>
+            <label>Phone</label>
+            <input value={customer.customer_phone} onChange={(e) => setCustomer({ ...customer, customer_phone: e.target.value })} />
+          </div>
+          {error && <div style={{ color: 'red' }}>{error}</div>}
+          <div style={{ marginTop: 12 }}>
+            <button type="submit" disabled={loading || items.length === 0}>{loading ? 'Processing...' : 'Checkout'}</button>
+          </div>
+        </form>
+      </main>
     </div>
   )
 }

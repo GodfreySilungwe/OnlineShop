@@ -56,6 +56,7 @@ function App() {
 
       <main className="app-main">
         <Routes>
+          <Route path="/menu" element={<Menu categories={categories} />} />
           <Route path="/" element={<Menu categories={categories} />} />
           <Route path="/about" element={<About />} />
           <Route path="/gallery" element={<Gallery />} />

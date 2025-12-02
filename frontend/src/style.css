@@ -42,8 +42,12 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 
 /* Cards and menu */
 .category{ margin-bottom:28px }
 .items{ display:flex; gap:16px; flex-wrap:wrap }
-.item-card{ border:0; padding:14px; width:240px; border-radius:10px; background:var(--surface); box-shadow:var(--card-shadow); transition:transform .12s ease, box-shadow .12s ease }
+.item-card{ border:0; padding:0; width:240px; border-radius:12px; background:var(--surface); box-shadow:var(--card-shadow); transition:transform .12s ease, box-shadow .12s ease; overflow:hidden; display:flex; flex-direction:column }
 .item-card:hover{ transform:translateY(-6px); box-shadow: 0 12px 30px rgba(2,6,23,0.08) }
+.item-card .thumb{ height:150px; background-size:cover; background-position:center; flex-shrink:0 }
+.card-content{ padding:14px }
+.card-title{ margin:0 0 6px 0; font-size:16px }
+.card-desc{ margin:0; color:var(--muted); font-size:13px }
 .item-row{ display:flex; justify-content:space-between; align-items:center }
 .muted{ color:var(--muted); font-size:0.95rem }
 
@@ -73,3 +77,12 @@ label{ font-weight:600; display:block; margin-bottom:6px }
 /* Small utilities */
 .muted-small{ color:var(--muted); font-size:13px }
 .center{ text-align:center }
+
+/* Cart layout with promotions column */
+.cart-grid{ display:grid; grid-template-columns: 280px 1fr; gap:20px; align-items:start }
+.promotions{ background:var(--surface); padding:14px; border-radius:10px; box-shadow:var(--card-shadow) }
+.cart-main{ background:transparent }
+
+@media (max-width:900px){
+  .cart-grid{ grid-template-columns: 1fr; }
+}
