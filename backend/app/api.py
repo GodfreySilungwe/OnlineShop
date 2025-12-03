@@ -1,8 +1,10 @@
 import os
 import random
+import time
 from datetime import datetime
 from flask import Blueprint, jsonify, request
 from flask import send_from_directory, abort
+from werkzeug.utils import secure_filename
 from . import db
 from .models import MenuItem, Category, Order, OrderItem, Subscriber, Customer, Reservation
 
@@ -21,7 +23,7 @@ def list_menu():
             'id': c.id,
             'name': c.name,
             'items': [
-                {'id': i.id, 'name': i.name, 'description': i.description, 'price_cents': i.price_cents, 'available': i.available}
+                {'id': i.id, 'name': i.name, 'description': i.description, 'price_cents': i.price_cents, 'available': i.available, 'image_filename': getattr(i, 'image_filename', None)}
                 for i in items
             ]
         })
@@ -70,7 +72,18 @@ def index():
         cats.append({
             'id': c.id,
             'name': c.name,
-            'items': items
+            'items': [
+                {
+                    'id': i.id,
+                    'name': i.name,
+                    'description': i.description,
+                    'price_cents': i.price_cents,
+                    'available': i.available,
+                    'image_filename': getattr(i, 'image_filename', None),
+                    'category_id': i.category_id
+                }
+                for i in items
+            ]
         })
     # This endpoint serves the same data the frontend expects during development.
     return jsonify(cats)
@@ -112,7 +125,7 @@ def admin_list_menu_items():
         return jsonify({'error': 'unauthorized'}), 401
     items = MenuItem.query.order_by(MenuItem.created_at.desc()).all()
     return jsonify([
-        {'id': i.id, 'name': i.name, 'description': i.description, 'price_cents': i.price_cents, 'available': i.available, 'category_id': i.category_id}
+        {'id': i.id, 'name': i.name, 'description': i.description, 'price_cents': i.price_cents, 'available': i.available, 'category_id': i.category_id, 'image_filename': getattr(i, 'image_filename', None)}
         for i in items
     ])
 
@@ -122,14 +135,63 @@ def admin_list_categories():
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
     cats = Category.query.order_by(Category.position).all()
-    return jsonify([{'id': c.id, 'name': c.name} for c in cats])
+    return jsonify([{'id': c.id, 'name': c.name, 'position': c.position} for c in cats])
+
+
+@api_bp.route('/admin/categories', methods=['POST'])
+def admin_create_category():
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json() or {}
+    name = data.get('name')
+    position = data.get('position', 0)
+    if not name:
+        return jsonify({'error': 'name is required'}), 400
+    cat = Category(name=name, position=int(position))
+    db.session.add(cat)
+    db.session.commit()
+    return jsonify({'id': cat.id, 'name': cat.name, 'position': cat.position}), 201
+
+
+@api_bp.route('/admin/categories/<int:cat_id>', methods=['PUT', 'PATCH'])
+def admin_update_category(cat_id):
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    cat = Category.query.get(cat_id)
+    if not cat:
+        return jsonify({'error': 'not found'}), 404
+    data = request.get_json() or {}
+    if 'name' in data:
+        cat.name = data['name']
+    if 'position' in data:
+        cat.position = int(data['position'])
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@api_bp.route('/admin/categories/<int:cat_id>', methods=['DELETE'])
+def admin_delete_category(cat_id):
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    cat = Category.query.get(cat_id)
+    if not cat:
+        return jsonify({'error': 'not found'}), 404
+    db.session.delete(cat)
+    db.session.commit()
+    return jsonify({'ok': True}), 200
 
 
 @api_bp.route('/admin/menu_items', methods=['POST'])
 def admin_create_menu_item():
     if not _is_admin(request):
         return jsonify({'error': 'unauthorized'}), 401
-    data = request.get_json() or {}
+    # support both JSON body and multipart/form-data with file upload
+    data = {}
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
+        data = request.form.to_dict()
+    else:
+        data = request.get_json() or {}
+
     name = data.get('name')
     price = data.get('price_cents')
     category_id = data.get('category_id')
@@ -140,10 +202,30 @@ def admin_create_menu_item():
     cat = Category.query.get(category_id)
     if not cat:
         return jsonify({'error': f'category {category_id} not found'}), 400
+
+    image_filename = None
+    # if an image file is included, save it to Images/ and record filename
+    if 'image' in request.files:
+        img = request.files.get('image')
+        if img and img.filename:
+            images_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', 'Images'))
+            try:
+                os.makedirs(images_dir, exist_ok=True)
+            except Exception:
+                pass
+            fname = secure_filename(img.filename)
+            # prefix with timestamp to avoid collisions
+            fname = f"{int(time.time())}_{fname}"
+            save_path = os.path.join(images_dir, fname)
+            img.save(save_path)
+            image_filename = fname
+
     mi = MenuItem(name=name, description=data.get('description'), price_cents=int(price), available=bool(data.get('available', True)), category_id=category_id)
+    if image_filename:
+        mi.image_filename = image_filename
     db.session.add(mi)
     db.session.commit()
-    return jsonify({'id': mi.id}), 201
+    return jsonify({'id': mi.id, 'image_filename': getattr(mi, 'image_filename', None)}), 201
 
 
 @api_bp.route('/admin/menu_items/<int:item_id>', methods=['PUT', 'PATCH'])
@@ -154,6 +236,9 @@ def admin_update_menu_item(item_id):
     if not mi:
         return jsonify({'error': 'not found'}), 404
     data = request.get_json() or {}
+    # also accept multipart/form-data for updating image
+    if request.content_type and request.content_type.startswith('multipart/form-data'):
+        data = {**data, **request.form.to_dict()}
     if 'name' in data:
         mi.name = data['name']
     if 'description' in data:
@@ -168,8 +253,34 @@ def admin_update_menu_item(item_id):
         if not new_cat:
             return jsonify({'error': f'category {data["category_id"]} not found'}), 400
         mi.category_id = data['category_id']
+    # handle image upload when present
+    if 'image' in request.files:
+        img = request.files.get('image')
+        if img and img.filename:
+            images_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', '..', 'Images'))
+            try:
+                os.makedirs(images_dir, exist_ok=True)
+            except Exception:
+                pass
+            fname = secure_filename(img.filename)
+            fname = f"{int(time.time())}_{fname}"
+            save_path = os.path.join(images_dir, fname)
+            img.save(save_path)
+            mi.image_filename = fname
     db.session.commit()
     return jsonify({'ok': True})
+
+
+@api_bp.route('/admin/menu_items/<int:item_id>', methods=['DELETE'])
+def admin_delete_menu_item(item_id):
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    mi = MenuItem.query.get(item_id)
+    if not mi:
+        return jsonify({'error': 'not found'}), 404
+    db.session.delete(mi)
+    db.session.commit()
+    return jsonify({'ok': True}), 200
 
 
 @api_bp.route('/gallery', methods=['GET'])

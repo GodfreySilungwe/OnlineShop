@@ -11,7 +11,7 @@ const CARD_IMAGES = [
 
 export default function ItemCard({ item }) {
   const { addToCart } = useCart()
-  const img = CARD_IMAGES[(item.id || 0) % CARD_IMAGES.length]
+  const img = item && item.image_filename ? item.image_filename : CARD_IMAGES[(item.id || 0) % CARD_IMAGES.length]
 
   return (
     <div className="item-card">

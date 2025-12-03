@@ -17,6 +17,8 @@ export default function AdminDashboard() {
   const [menuItems, setMenuItems] = useState([])
   const [categories, setCategories] = useState([])
   const [error, setError] = useState(null)
+  const [editingItem, setEditingItem] = useState(null)
+  const [editingCategory, setEditingCategory] = useState(null)
 
   useEffect(() => {
     if (!adminSecret) return
@@ -35,9 +37,13 @@ export default function AdminDashboard() {
       useAdminFetch('/api/admin/orders', adminSecret)
         .then(setOrders)
         .catch((e) => setError(e.message))
-    } else {
+    } else if (tab === 'menu') {
       useAdminFetch('/api/admin/menu_items', adminSecret)
         .then(setMenuItems)
+        .catch((e) => setError(e.message))
+    } else if (tab === 'categories') {
+      useAdminFetch('/api/admin/categories', adminSecret)
+        .then(setCategories)
         .catch((e) => setError(e.message))
     }
   }, [tab, adminSecret])
@@ -66,6 +72,37 @@ export default function AdminDashboard() {
     }
   }
 
+  async function deleteItem(item) {
+    if (!adminSecret) return promptForSecret()
+    if (!window.confirm(`Delete "${item.name}"?`)) return
+    try {
+      const res = await fetch(`/api/admin/menu_items/${item.id}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Secret': adminSecret },
+      })
+      if (!res.ok) throw new Error('delete failed')
+      setMenuItems((prev) => prev.filter((m) => m.id !== item.id))
+    } catch (e) {
+      setError(String(e))
+    }
+  }
+
+  async function updateItem(item, updates) {
+    if (!adminSecret) return promptForSecret()
+    try {
+      const res = await fetch(`/api/admin/menu_items/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': adminSecret },
+        body: JSON.stringify(updates),
+      })
+      if (!res.ok) throw new Error('update failed')
+      setMenuItems((prev) => prev.map((m) => (m.id === item.id ? { ...m, ...updates } : m)))
+      setEditingItem(null)
+    } catch (e) {
+      setError(String(e))
+    }
+  }
+
   async function createItem(e) {
     e.preventDefault()
     const form = e.target
@@ -76,17 +113,81 @@ export default function AdminDashboard() {
     const category_id = categoryVal ? parseInt(categoryVal, 10) : null
     if (!name || isNaN(price)) return setError('invalid inputs')
     try {
+      const formData = new FormData()
+      formData.append('name', name)
+      formData.append('price_cents', price)
+      formData.append('description', description)
+      if (category_id) formData.append('category_id', category_id)
+      // include image file if present
+      if (form.image && form.image.files && form.image.files[0]) {
+        formData.append('image', form.image.files[0])
+      }
+
       const res = await fetch('/api/admin/menu_items', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': adminSecret },
-        body: JSON.stringify({ name, price_cents: price, description, category_id }),
+        headers: { 'X-Admin-Secret': adminSecret }, // omit Content-Type so browser sets multipart boundary
+        body: formData,
       })
       if (!res.ok) throw new Error('create failed')
       const data = await res.json()
       // refresh list
       const items = await useAdminFetch('/api/admin/menu_items', adminSecret)
       setMenuItems(items)
+      setEditingItem(null)
       form.reset()
+    } catch (e) {
+      setError(String(e))
+    }
+  }
+
+  async function createCategory(e) {
+    e.preventDefault()
+    const form = e.target
+    const name = form.cat_name.value
+    const position = form.cat_position ? parseInt(form.cat_position.value, 10) : 0
+    if (!name) return setError('category name required')
+    try {
+      const res = await fetch('/api/admin/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': adminSecret },
+        body: JSON.stringify({ name, position }),
+      })
+      if (!res.ok) throw new Error('create failed')
+      const cats = await useAdminFetch('/api/admin/categories', adminSecret)
+      setCategories(cats)
+      setEditingCategory(null)
+      form.reset()
+    } catch (e) {
+      setError(String(e))
+    }
+  }
+
+  async function updateCategory(cat, updates) {
+    if (!adminSecret) return promptForSecret()
+    try {
+      const res = await fetch(`/api/admin/categories/${cat.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': adminSecret },
+        body: JSON.stringify(updates),
+      })
+      if (!res.ok) throw new Error('update failed')
+      setCategories((prev) => prev.map((c) => (c.id === cat.id ? { ...c, ...updates } : c)))
+      setEditingCategory(null)
+    } catch (e) {
+      setError(String(e))
+    }
+  }
+
+  async function deleteCategory(cat) {
+    if (!adminSecret) return promptForSecret()
+    if (!window.confirm(`Delete category "${cat.name}"?`)) return
+    try {
+      const res = await fetch(`/api/admin/categories/${cat.id}`, {
+        method: 'DELETE',
+        headers: { 'X-Admin-Secret': adminSecret },
+      })
+      if (!res.ok) throw new Error('delete failed')
+      setCategories((prev) => prev.filter((c) => c.id !== cat.id))
     } catch (e) {
       setError(String(e))
     }
@@ -106,7 +207,8 @@ export default function AdminDashboard() {
         <div>
           <div style={{ marginBottom: 12 }}>
             <button onClick={() => setTab('orders')} disabled={tab === 'orders'}>Orders</button>
-            <button onClick={() => setTab('menu')} disabled={tab === 'menu'} style={{ marginLeft: 8 }}>Menu</button>
+            <button onClick={() => setTab('categories')} disabled={tab === 'categories'} style={{ marginLeft: 8 }}>Categories</button>
+            <button onClick={() => setTab('menu')} disabled={tab === 'menu'} style={{ marginLeft: 8 }}>Menu Items</button>
           </div>
 
           {error && <div style={{ color: 'red' }}>{error}</div>}
@@ -130,6 +232,67 @@ export default function AdminDashboard() {
             </div>
           )}
 
+          {tab === 'categories' && (
+            <div>
+              <h3>Categories</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Position</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categories.map((c) => (
+                    <tr key={c.id}>
+                      <td>
+                        {editingCategory?.id === c.id ? (
+                          <input
+                            type="text"
+                            defaultValue={c.name}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') updateCategory(c, { name: e.target.value })
+                            }}
+                          />
+                        ) : (
+                          c.name
+                        )}
+                      </td>
+                      <td>{c.position}</td>
+                      <td style={{ display: 'flex', gap: 8 }}>
+                        {editingCategory?.id === c.id ? (
+                          <>
+                            <button onClick={() => updateCategory(c, { name: editingCategory.name })}>Save</button>
+                            <button onClick={() => setEditingCategory(null)}>Cancel</button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => setEditingCategory(c)}>Edit</button>
+                            <button onClick={() => deleteCategory(c)} style={{ background: '#d9534f', color: 'white' }}>Delete</button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <h4 style={{ marginTop: 12 }}>Create new category</h4>
+              <form onSubmit={createCategory}>
+                <div>
+                  <input name="cat_name" placeholder="Category name" required />
+                </div>
+                <div>
+                  <input name="cat_position" type="number" placeholder="Position (default 0)" defaultValue={0} />
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  <button type="submit">Create</button>
+                </div>
+              </form>
+            </div>
+          )}
+
           {tab === 'menu' && (
             <div>
               <h3>Menu Items</h3>
@@ -144,12 +307,35 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody>
                   {menuItems.map((m) => (
-                    <tr key={m.id}>
-                      <td>{m.name}</td>
-                      <td>{(m.price_cents/100).toFixed(2)}</td>
-                      <td>{m.available ? 'yes' : 'no'}</td>
-                      <td><button onClick={() => toggleAvailable(m)}>{m.available ? 'Disable' : 'Enable'}</button></td>
-                    </tr>
+                    editingItem?.id === m.id ? (
+                      <tr key={m.id}>
+                        <td><input type="text" defaultValue={m.name} placeholder="Name" /></td>
+                        <td><input type="number" defaultValue={(m.price_cents/100).toFixed(2)} placeholder="Price" step="0.01" /></td>
+                        <td><input type="checkbox" defaultChecked={m.available} /></td>
+                        <td style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => {
+                            const inputs = event.target.closest('tr').querySelectorAll('input')
+                            updateItem(m, {
+                              name: inputs[0].value,
+                              price_cents: Math.round(parseFloat(inputs[1].value) * 100),
+                              available: inputs[2].checked
+                            })
+                          }}>Save</button>
+                          <button onClick={() => setEditingItem(null)}>Cancel</button>
+                        </td>
+                      </tr>
+                    ) : (
+                      <tr key={m.id}>
+                        <td>{m.name}</td>
+                        <td>{(m.price_cents/100).toFixed(2)}</td>
+                        <td>{m.available ? 'yes' : 'no'}</td>
+                        <td style={{ display: 'flex', gap: 8 }}>
+                          <button onClick={() => toggleAvailable(m)}>{m.available ? 'Disable' : 'Enable'}</button>
+                          <button onClick={() => setEditingItem(m)}>Edit</button>
+                          <button onClick={() => deleteItem(m)} style={{ background: '#d9534f', color: 'white' }}>Delete</button>
+                        </td>
+                      </tr>
+                    )
                   ))}
                 </tbody>
               </table>
@@ -172,6 +358,10 @@ export default function AdminDashboard() {
                 </div>
                 <div>
                   <input name="description" placeholder="Description" />
+                </div>
+                <div>
+                  <label>Image</label>
+                  <input type="file" name="image" accept="image/*" />
                 </div>
                 <div style={{ marginTop: 8 }}>
                   <button type="submit">Create</button>

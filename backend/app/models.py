@@ -12,6 +12,8 @@ class MenuItem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(128), nullable=False)
     description = db.Column(db.String(512))
+    # filename of image stored in repository Images/ folder (e.g. 'latte.jpg')
+    image_filename = db.Column(db.String(256))
     price_cents = db.Column(db.Integer, nullable=False)
     available = db.Column(db.Boolean, default=True)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'))
