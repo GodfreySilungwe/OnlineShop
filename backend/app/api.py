@@ -6,7 +6,7 @@ from flask import Blueprint, jsonify, request
 from flask import send_from_directory, abort
 from werkzeug.utils import secure_filename
 from . import db
-from .models import MenuItem, Category, Order, OrderItem, Subscriber, Customer, Reservation
+from .models import MenuItem, Category, Order, OrderItem, Subscriber, Customer, Reservation, Promotion
 
 # Simple admin secret (dev-only). Configure ADMIN_SECRET in your environment or .env
 ADMIN_SECRET = os.getenv('ADMIN_SECRET', 'dev-secret')
@@ -27,7 +27,14 @@ def list_menu():
                 for i in items
             ]
         })
-    return jsonify(result)
+    # also include any active promotions
+    try:
+        from .models import Promotion
+        promos = Promotion.query.filter_by(active=True).order_by(Promotion.created_at.desc()).all()
+        promotions = [{'id': p.id, 'title': p.title, 'percent': p.percent} for p in promos]
+    except Exception:
+        promotions = []
+    return jsonify({'categories': result, 'promotions': promotions})
 
 @api_bp.route('/cart/checkout', methods=['POST'])
 def checkout():
@@ -128,6 +135,75 @@ def admin_list_menu_items():
         {'id': i.id, 'name': i.name, 'description': i.description, 'price_cents': i.price_cents, 'available': i.available, 'category_id': i.category_id, 'image_filename': getattr(i, 'image_filename', None)}
         for i in items
     ])
+
+
+@api_bp.route('/admin/promotions', methods=['GET'])
+def admin_list_promotions():
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    try:
+        promos = Promotion.query.order_by(Promotion.created_at.desc()).all()
+    except Exception:
+        promos = []
+    return jsonify([{'id': p.id, 'title': p.title, 'percent': p.percent, 'active': p.active} for p in promos])
+
+
+@api_bp.route('/admin/promotions', methods=['POST'])
+def admin_create_promotion():
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json() or {}
+    title = data.get('title')
+    percent = data.get('percent')
+    active = bool(data.get('active', True))
+    if not title or percent is None:
+        return jsonify({'error': 'title and percent are required'}), 400
+    try:
+        percent = int(percent)
+        if percent < 0 or percent > 100:
+            raise ValueError()
+    except Exception:
+        return jsonify({'error': 'percent must be an integer 0-100'}), 400
+    promo = Promotion(title=title, percent=percent, active=active)
+    db.session.add(promo)
+    db.session.commit()
+    return jsonify({'id': promo.id, 'title': promo.title, 'percent': promo.percent, 'active': promo.active}), 201
+
+
+@api_bp.route('/admin/promotions/<int:pid>', methods=['PUT', 'PATCH'])
+def admin_update_promotion(pid):
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    promo = Promotion.query.get(pid)
+    if not promo:
+        return jsonify({'error': 'not found'}), 404
+    data = request.get_json() or {}
+    if 'title' in data:
+        promo.title = data['title']
+    if 'percent' in data:
+        try:
+            p = int(data['percent'])
+            if p < 0 or p > 100:
+                raise ValueError()
+            promo.percent = p
+        except Exception:
+            return jsonify({'error': 'percent must be an integer 0-100'}), 400
+    if 'active' in data:
+        promo.active = bool(data['active'])
+    db.session.commit()
+    return jsonify({'ok': True})
+
+
+@api_bp.route('/admin/promotions/<int:pid>', methods=['DELETE'])
+def admin_delete_promotion(pid):
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    promo = Promotion.query.get(pid)
+    if not promo:
+        return jsonify({'error': 'not found'}), 404
+    db.session.delete(promo)
+    db.session.commit()
+    return jsonify({'ok': True}), 200
 
 
 @api_bp.route('/admin/categories', methods=['GET'])
