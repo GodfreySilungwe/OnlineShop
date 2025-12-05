@@ -47,6 +47,11 @@ export default function AdminDashboard() {
         .then(setCategories)
         .catch((e) => setError(e.message))
     } else if (tab === 'promotions') {
+      // ensure menu items are loaded so the create-promotion dropdown can populate
+      useAdminFetch('/api/admin/menu_items', adminSecret)
+        .then(setMenuItems)
+        .catch(() => {})
+
       useAdminFetch('/api/admin/promotions', adminSecret)
         .then(setPromotions)
         .catch((e) => setError(e.message))
