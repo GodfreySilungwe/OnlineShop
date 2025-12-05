@@ -15,16 +15,55 @@ body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 
 
 /* Header */
 .app-header{ display:flex; gap:16px; align-items:center; padding:14px 20px; background: linear-gradient(90deg, rgba(183,110,121,0.06), rgba(43,138,120,0.04)); border-bottom:1px solid #efecec; position:sticky; top:0; z-index:30 }
-.app-header a{ color: #fff; text-decoration:none; padding:6px 8px; border-radius:6px; transition:background .15s, color .15s; font-weight:600; text-shadow: 0 1px 2px rgba(0,0,0,0.6) }
-.app-header a:hover{ background: rgba(255,255,255,0.06); color: #fff }
+.app-header{ display:flex; gap:16px; align-items:center; padding:14px 20px; background: linear-gradient(90deg, rgba(11,78,69,0.06), rgba(43,138,120,0.04)); border-bottom:1px solid rgba(255,255,255,0.06); position:sticky; top:0; z-index:30; backdrop-filter: blur(4px); }
+
+/* Animated gradient for text */
+@keyframes gradientShift { 0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%} }
+
+/* Nav links: colorful gradient text and subtle hover lift */
+.app-header a{
+  text-decoration:none;
+  padding:6px 10px;
+  border-radius:8px;
+  transition: transform .12s ease, opacity .12s ease;
+  font-weight:700;
+  font-size:16px;
+  color: transparent;
+  background: linear-gradient(90deg, #ff9a9e 0%, #ffd275 40%, #43e97b 100%);
+  background-size:200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientShift 6s ease infinite;
+}
+.app-header a:hover{ transform: translateY(-3px); opacity: 0.95 }
+
+/* Make header links slightly more compact on narrow screens */
+@media (max-width:720px){
+  .app-header a{ font-size:14px; padding:6px 8px }
+}
+
+/* Header splash (big colorful words between nav and search) */
+
+.header-splash{ margin-left:18px; display:flex; align-items:center; gap:12px; padding:6px 14px; border-radius:10px; background:linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01)); }
+.header-splash .header-brand{ font-weight:900; font-size:34px; letter-spacing:0.2px; font-family: Georgia, 'Times New Roman', serif; color: #fff; text-shadow: 0 10px 28px rgba(0,0,0,0.26); background: linear-gradient(90deg, #ffd275 0%, #ff9a9e 50%, #ffd275 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+@media (max-width:1024px){
+  .header-splash .header-brand{ font-size:26px }
+}
+
+@media (max-width:720px){
+  .header-splash{ display:none }
+}
 
 /* badge for cart count */
 .cart-badge{ display:inline-block; min-width:20px; padding:2px 8px; border-radius:999px; background:var(--accent); color:white; font-size:12px; margin-left:8px }
 
 /* Hero / home section */
-.home-hero{ background:var(--surface); border-radius:8px; padding:20px; box-shadow:var(--card-shadow); }
-.home-hero h1{ margin:0 0 6px 0; font-size:28px }
-.home-hero p{ margin:6px 0; color:var(--muted) }
+.home-hero{ background:var(--surface); border-radius:10px; padding:12px 20px; box-shadow:var(--card-shadow); display:flex; justify-content:space-between; align-items:center; min-height:72px; position:relative; overflow:hidden }
+.home-hero .footer-item{ flex:1; text-align:center; color: #fff }
+.home-hero .footer-item strong{ display:block; font-weight:700; margin-bottom:6px; font-size:14px }
+.home-hero .footer-item div{ font-size:13px; opacity:0.95 }
 /* Background image for home hero using project Images folder served at /api/images/<filename> */
 .home-hero{
   background-image: linear-gradient(rgba(11,78,69,0.46), rgba(11,78,69,0.18)), url('/api/images/home-cafe-fausse.webp');
@@ -71,7 +110,7 @@ label{ font-weight:600; display:block; margin-bottom:6px }
   .app-main{ padding:0 12px }
   .items{ justify-content:center }
   .item-card{ width:100%; max-width:420px }
-  .home-hero{ padding:16px }
+  .home-hero{ padding:12px; flex-direction:column; gap:10px; align-items:flex-start }
 }
 
 /* Small utilities */

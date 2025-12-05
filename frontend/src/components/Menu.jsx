@@ -132,34 +132,20 @@ export default function Menu({ categories = [], searchQuery = '', onSearchChange
           })
         )}
 
-        <section className="home-hero" style={{ padding: 20, borderTop: '1px solid #eee', marginTop: 20 }}>
-          <h1 style={{ margin: 0 }}>Café Fausse</h1>
-          <p style={{ margin: '6px 0' }}>
-            <strong>Email:</strong> <a href="mailto:silungwegod@gmail.com">silungwegod@gmail.com</a>
-            &nbsp;•&nbsp;
-            <strong>Phone:</strong> <a href="tel:(202) 555-4567">(202) 555-4567</a>
-          </p>
+        <section className="home-hero footer-contacts" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 20 }}>
+          <div className="footer-item">
+            <strong>Address</strong>
+            <div>1234 Culinary Ave, Suite 100, Washington, DC 20002</div>
+          </div>
 
-          <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-            <div>
-              <h4 style={{ margin: '6px 0' }}>Hours</h4>
-              <ul style={{ marginTop: 6 }}>
-                <li>Mon–Fri: 07:30 — 19:00</li>
-                <li>Sat: 08:00 — 18:00</li>
-                <li>Sun: 09:00 — 15:00</li>
-              </ul>
-            </div>
+          <div className="footer-item">
+            <strong>Phone</strong>
+            <div><a href="tel:(202)5554567" style={{ color: 'inherit', textDecoration: 'none' }}>(202) 555-4567</a></div>
+          </div>
 
-            <div>
-              <h4 style={{ margin: '6px 0' }}>Quick links</h4>
-              <nav style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <Link to="/menu">View Menu</Link>
-                <Link to="/cart">Your Cart</Link>
-                <Link to="/reserve">Make a Reservation</Link>
-                <Link to="/about">About Us</Link>
-                <Link to="/gallery">Gallery</Link>
-              </nav>
-            </div>
+          <div className="footer-item">
+            <strong>Hours</strong>
+            <div>Monday–Saturday: 5:00 PM – 11:00 PM<br />Sunday: 5:00 PM – 9:00 PM</div>
           </div>
         </section>
       </main>

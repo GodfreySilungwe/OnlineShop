@@ -45,6 +45,9 @@ function HeaderBar({ searchQuery, onSearchChange }) {
           <Link to="/admin">Admin</Link>
           <Link to="/gallery">Gallery</Link>
         </nav>
+        <div className="header-splash" aria-hidden>
+          <div className="header-brand">Café Fausse</div>
+        </div>
         <input
           type="text"
           placeholder="Search items..."
