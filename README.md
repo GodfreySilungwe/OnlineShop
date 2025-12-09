@@ -7,14 +7,14 @@ It includes a Flask backend, a small React frontend (Vite), and a Docker Compose
 
 Prerequisites
 
-- Windows with PowerShell (you already are using this)
+- Windows with PowerShell 
 - Python 3.10+
 - Node.js 18+
 - Docker & Docker Compose
 
 Quick start (recommended)
 
-1. Database (you already have Postgres/pgAdmin):
+1. Database (already have Postgres/pgAdmin):
 
 If you already run PostgreSQL and pgAdmin locally, skip any Docker-based DB setup. Ensure a database and user exist matching `backend/.env.example` or set `DATABASE_URL` to your preferred connection string.
 
@@ -68,10 +68,4 @@ Files added by scaffold
 
 - `backend/` — Flask app (app factory, models, API blueprint)
 
-Next steps I can take now
-
-- Add Dockerfile for backend and run everything via docker-compose
-- Add OpenAPI skeleton and tests for core endpoints
-- Wire up migrations and seed data fully
-
-Tell me which next step you want me to do now.
+I used Visual Studio’s AI Assistant during development, mainly for quick project scaffolding and on-the-spot guidance through the chat interface. The tool streamlined setup tasks, generated boilerplate code efficiently, and helped clarify errors or implementation decisions as I worked. Its conversational assistance made it easy to experiment with ideas and adjust code in real time. However, the main drawback was the usage limits, which quickly ran out, and the requirement for a subscription to access full functionality.

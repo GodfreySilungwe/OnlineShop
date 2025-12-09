@@ -8,10 +8,10 @@ export default function About() {
         Owner: <strong>Café Fausse</strong>
       </p>
       <p>
-        Email: <a href="mailto:silungwegod@gmail.com">silungwegod@gmail.com</a>
+        Email: <a href="mailto:Email@Email.com">Email@Email.com</a>
       </p>
       <p>
-        Phone: <a href="tel:+265995718815">+265 99 571 8815</a>
+        Phone: <a href="tel:(202) 555-4567">(202) 555-456</a>
       </p>
       <p>
         Welcome to Café Fausse — we serve carefully prepared coffee and freshly baked goods. Visit us to enjoy a relaxed atmosphere and delicious menu.
