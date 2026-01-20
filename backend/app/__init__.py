@@ -1,13 +1,11 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from dotenv import load_dotenv
 
 load_dotenv()
 
 db = SQLAlchemy()
-migrate = Migrate()
 
 
 def create_app():
@@ -17,7 +15,6 @@ def create_app():
     app.config['JSON_SORT_KEYS'] = False
 
     db.init_app(app)
-    migrate.init_app(app, db)
 
     # register blueprintss
     from .api import api_bp

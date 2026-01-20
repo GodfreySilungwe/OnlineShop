@@ -2,11 +2,15 @@ import os
 import random
 import time
 from datetime import datetime
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, redirect
 from flask import send_from_directory, abort
 from werkzeug.utils import secure_filename
 from . import db
 from .models import MenuItem, Category, Order, OrderItem, Subscriber, Customer, Reservation, Promotion
+import stripe
+
+# Initialize Stripe with API key
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
 
 # Simple admin secret (dev-only). Configure ADMIN_SECRET in your environment or .env
 ADMIN_SECRET = os.getenv('ADMIN_SECRET', 'dev-secret')
@@ -74,6 +78,76 @@ def checkout():
     db.session.commit()
 
     return jsonify({'order_id': order.id, 'status': order.status})
+
+
+@api_bp.route('/stripe-checkout', methods=['POST'])
+def stripe_checkout():
+    """Create a Stripe checkout session for the cart items."""
+    data = request.get_json() or {}
+    items = data.get('items', [])
+    customer_name = data.get('customer_name')
+    customer_email = data.get('customer_email')
+    customer_phone = data.get('customer_phone')
+
+    if not items or not customer_name:
+        return jsonify({'error': 'Missing items or customer name'}), 400
+
+    if not stripe.api_key:
+        return jsonify({'error': 'Stripe is not configured'}), 500
+
+    try:
+        # Prepare line items for Stripe
+        line_items = []
+        order_total_cents = 0
+        
+        for it in items:
+            menu_item = MenuItem.query.get(it.get('menu_item_id'))
+            if not menu_item:
+                return jsonify({'error': f"Menu item {it.get('menu_item_id')} not found"}), 400
+            
+            qty = int(it.get('qty', 1))
+            price_cents = int(menu_item.price_cents)
+            order_total_cents += price_cents * qty
+            
+            # For Stripe, price is in cents
+            line_items.append({
+                'price_data': {
+                    'currency': 'usd',
+                    'product_data': {
+                        'name': menu_item.name,
+                        'description': menu_item.description,
+                    },
+                    'unit_amount': price_cents,
+                },
+                'quantity': qty,
+            })
+
+        # Get domain from environment or use localhost
+        domain = os.getenv('DOMAIN', 'http://localhost:5173')
+        
+        # Create Stripe checkout session
+        checkout_session = stripe.checkout.Session.create(
+            payment_method_types=['card'],
+            line_items=line_items,
+            mode='payment',
+            customer_email=customer_email,
+            success_url=f"{domain}/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{domain}/cart",
+            metadata={
+                'customer_name': customer_name,
+                'customer_phone': customer_phone,
+            }
+        )
+
+        return jsonify({
+            'sessionId': checkout_session.id,
+            'url': checkout_session.url,
+        }), 200
+
+    except stripe.error.StripeError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': 'Failed to create checkout session'}), 500
 
 
 @api_bp.route('/')

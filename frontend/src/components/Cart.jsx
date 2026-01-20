@@ -31,7 +31,8 @@ export default function Cart() {
     }
     setLoading(true)
     try {
-      const res = await fetch('/api/cart/checkout', {
+      // Call Stripe checkout endpoint
+      const res = await fetch('/api/stripe-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -40,8 +41,12 @@ export default function Cart() {
       if (!res.ok) {
         setError(data.error || 'Checkout failed')
       } else {
-        setOrderId(data.order_id)
-        clearCart()
+        // Redirect to Stripe checkout
+        if (data.url) {
+          window.location.href = data.url
+        } else {
+          setError('Failed to get checkout URL')
+        }
       }
     } catch (err) {
       setError(String(err))
