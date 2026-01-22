@@ -1,0 +1,40 @@
+sequenceDiagram
+    actor User
+    participant Frontend as Frontend<br/>(React)
+    participant Backend as Backend<br/>(Flask API)
+    participant StripeAPI as Stripe<br/>API
+    participant StripeServer as Stripe<br/>Server
+    participant Database as Database
+
+    User->>Frontend: Add items to cart
+    Frontend->>Frontend: Calculate total
+    
+    User->>Frontend: Checkout
+    
+    Frontend->>Backend: POST /stripe-checkout
+    activate Backend
+    
+    Backend->>Database: Create Order
+    Backend->>Database: Save OrderItems
+    Backend->>StripeAPI: Create Session
+    
+    activate StripeAPI
+    StripeAPI-->>Backend: Session URL
+    deactivate StripeAPI
+    
+    Backend-->>Frontend: Return URL
+    deactivate Backend
+    
+    Frontend->>StripeAPI: Redirect to Checkout
+    activate StripeAPI
+    
+    User->>StripeAPI: Enter Payment
+    StripeAPI->>StripeServer: Webhook (Success)
+    
+    activate StripeServer
+    StripeServer->>Database: Update Order Status
+    deactivate StripeServer
+    
+    deactivate StripeAPI
+    
+    Frontend->>User: Show Confirmation

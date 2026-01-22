@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Shop - UML Diagrams</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .nav-tabs button {
+            padding: 12px 24px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .nav-tabs button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .nav-tabs button.active {
+            background: white;
+            color: #667eea;
+        }
+        
+        .diagram-container {
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .diagram-container.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .diagram-container h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .diagram-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+        
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #764ba2;
+        }
+        
+        .description {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 4px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        footer {
+            text-align: center;
+            color: white;
+            margin-top: 50px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>☕ Online Shop System</h1>
+            <p class="subtitle">UML Diagrams with Stripe Integration</p>
+        </header>
+        
+        <div class="nav-tabs">
+            <button class="tab-btn active" data-tab="class">Class Diagram</button>
+            <button class="tab-btn" data-tab="sequence">Sequence Diagram</button>
+            <button class="tab-btn" data-tab="activity">Activity Diagram</button>
+            <button class="tab-btn" data-tab="component">Component Diagram</button>
+        </div>
+        
+        <!-- Class Diagram -->
+        <div id="class" class="diagram-container active">
+            <h2>📦 Class Diagram - System Architecture</h2>
+            <div class="diagram-content">
+                <div class="mermaid">
+classDiagram
+    direction TB
+
+    class Category {
+        +int id
+        +string name
+        +int position
+    }
+
+    class MenuItem {
+        +int id
+        +string name
+        +string description
+        +string image_filename
+        +int price_cents
+        +boolean available
+        +int category_id
+        +datetime created_at
+    }
+
+    class Order {
+        +int id
+        +string customer_name
+        +string customer_email
+        +string customer_phone
+        +int total_cents
+        +string status
+        +datetime created_at
+    }
+
+    class OrderItem {
+        +int id
+        +int order_id
+        +int menu_item_id
+        +int qty
+        +int unit_price_cents
+    }
+
+    class Customer {
+        +int id
+        +string name
+        +string email
+        +string phone
+        +boolean newsletter
+        +datetime created_at
+    }
+
+    class Reservation {
+        +int id
+        +int customer_id
+        +datetime time_slot
+        +int table_number
+        +int guests
+        +datetime created_at
+    }
+
+    class Promotion {
+        +int id
+        +int menu_item_id
+        +int percent
+        +boolean active
+        +datetime created_at
+    }
+
+    class Subscriber {
+        +int id
+        +string email
+        +datetime created_at
+    }
+
+    class StripeCheckoutSession {
+        <<external>>
+        +string id
+        +string url
+        +string status
+        +object line_items
+        +string mode
+        +string success_url
+        +string cancel_url
+    }
+
+    class Cart {
+        +MenuItem[] items
+        +int totalCents
+        +string customer_name
+        +string customer_email
+        +string customer_phone
+        +addItem(MenuItem)
+        +removeItem(MenuItem)
+        +clearCart()
+        +calculateTotal()
+    }
+
+    class StripeAPI {
+        <<service>>
+        +createCheckoutSession(lineItems)
+        +retrievePrice(priceId)
+        +handleWebhook(event)
+        +constructEvent(payload, signature)
+    }
+
+    Category "1" -- "*" MenuItem: categorizes
+    MenuItem "1" -- "*" OrderItem: includes
+    Order "1" -- "*" OrderItem: contains
+    MenuItem "1" -- "*" Promotion: hasDiscount
+    Customer "1" -- "*" Reservation: makes
+    Order "1" --> "1" Customer: placedBy
+    Cart "1" --> "*" MenuItem: contains
+    StripeCheckoutSession "1" --> "1" Cart: checkoutFor
+    StripeAPI "1" --> "*" StripeCheckoutSession: creates
+    Order "1" --> "1" StripeCheckoutSession: paymentVia
+                </div>
+            </div>
+            <div class="description">
+                <strong>Description:</strong> Shows all database models and their relationships. The system manages Categories, MenuItems, Orders, Customers, and integrates with Stripe for payment processing.
+            </div>
+        </div>
+        
+        <!-- Sequence Diagram -->
+        <div id="sequence" class="diagram-container">
+            <h2>🔄 Sequence Diagram - Checkout Flow</h2>
+            <div class="diagram-content">
+                <div class="mermaid">
+sequenceDiagram
+    actor User
+    participant Frontend as Frontend<br/>(React)
+    participant Backend as Backend<br/>(Flask API)
+    participant StripeServer as Stripe Server<br/>(server.py)
+    participant StripeAPI as Stripe API
+    participant Database as PostgreSQL
+
+    User->>Frontend: Add items to cart
+    Frontend->>Frontend: Calculate total & discounts
+    
+    User->>Frontend: Enter name, email, phone
+    User->>Frontend: Click "Checkout"
+    
+    Frontend->>Backend: POST /api/stripe-checkout
+    activate Backend
+    
+    Note over Backend: Validate cart items
+    Note over Backend: Create Order (status: pending)
+    
+    Backend->>Database: Save Order
+    Backend->>Database: Save OrderItems
+    Database-->>Backend: Order ID
+    
+    Backend->>StripeAPI: stripe.checkout.Session.create()
+    activate StripeAPI
+    StripeAPI-->>Backend: Checkout Session + URL
+    deactivate StripeAPI
+    
+    Backend-->>Frontend: Return session URL
+    deactivate Backend
+    
+    Frontend->>StripeAPI: Redirect to checkout.stripe.com
+    activate StripeAPI
+    
+    User->>StripeAPI: Enter payment details
+    User->>StripeAPI: Confirm payment
+    
+    alt Payment Success
+        StripeAPI->>StripeAPI: Process payment
+        StripeAPI->>StripeServer: POST /api/webhook
+        activate StripeServer
+        
+        Note over StripeServer: Verify signature
+        Note over StripeServer: Handle checkout.session.completed
+        
+        StripeServer->>Database: Update Order status = "completed"
+        Database-->>StripeServer: OK
+        
+        StripeServer-->>StripeAPI: Return 200 success
+        deactivate StripeServer
+        
+        StripeAPI->>Frontend: Redirect to success URL
+        deactivate StripeAPI
+        
+        Frontend->>User: Show order confirmation
+    else Payment Failed
+        StripeAPI->>StripeServer: POST /api/webhook
+        activate StripeServer
+        
+        Note over StripeServer: Handle checkout.session.async_payment_failed
+        
+        StripeServer->>Database: Update Order status = "failed"
+        
+        StripeServer-->>StripeAPI: Return 200 success
+        deactivate StripeServer
+        
+        StripeAPI->>Frontend: Redirect to cancel URL
+        deactivate StripeAPI
+        
+        Frontend->>User: Show error message
+    end
+                </div>
+            </div>
+            <div class="description">
+                <strong>Description:</strong> Illustrates the complete checkout flow with Stripe. The user adds items to cart, submits payment info, and Stripe handles payment processing with webhook notifications for success/failure.
+            </div>
+        </div>
+        
+        <!-- Activity Diagram -->
+        <div id="activity" class="diagram-container">
+            <h2>📊 Activity Diagram - Order Processing</h2>
+            <div class="diagram-content">
+                <div class="mermaid">
+graph TD
+    A["Start: User Views Cart"] --> B{Cart Empty?}
+    B -->|Yes| C["Show Empty Message"]
+    C --> Z["End"]
+    
+    B -->|No| D["Display Items with Discounts"]
+    D --> E["Show Total Price"]
+    E --> F{User Clicks Checkout?}
+    
+    F -->|No| Z
+    
+    F -->|Yes| G["User Fills Form<br/>Name, Email, Phone"]
+    G --> H{Form Valid?}
+    
+    H -->|No| I["Show Error Message"]
+    I --> G
+    
+    H -->|Yes| J["Frontend POSTs<br/>/api/stripe-checkout"]
+    J --> K["Backend Creates Order<br/>status: pending"]
+    
+    K --> L["Backend Creates OrderItems<br/>from Cart Items"]
+    L --> M["Backend Creates Stripe<br/>Checkout Session"]
+    
+    M --> N["Return Session URL<br/>to Frontend"]
+    N --> O["Frontend Redirects<br/>to Stripe Checkout"]
+    
+    O --> P["User Enters Payment<br/>Details"]
+    P --> Q["User Confirms<br/>Payment"]
+    
+    Q --> R["Stripe Processes<br/>Payment"]
+    R --> S{Payment<br/>Successful?}
+    
+    S -->|No| T["Stripe Sends webhook<br/>checkout.session.async_payment_failed"]
+    T --> U["Backend Updates Order<br/>status: failed"]
+    U --> V["Stripe Redirects<br/>to Cancel URL"]
+    V --> W["Frontend Shows<br/>Error Message"]
+    W --> Z
+    
+    S -->|Yes| X["Stripe Sends webhook<br/>checkout.session.completed"]
+    X --> Y["Backend Updates Order<br/>status: completed"]
+    Y --> AA["Clear Cart<br/>in Frontend"]
+    AA --> AB["Stripe Redirects<br/>to Success URL"]
+    AB --> AC["Frontend Shows<br/>Order Confirmation"]
+    AC --> AD["Display Order ID"]
+    AD --> Z
+                </div>
+            </div>
+            <div class="description">
+                <strong>Description:</strong> Shows the step-by-step process flow of the checkout and order processing system, including validation, payment processing, and result handling.
+            </div>
+        </div>
+        
+        <!-- Component Diagram -->
+        <div id="component" class="diagram-container">
+            <h2>🏗️ Component Diagram - System Architecture</h2>
+            <div class="diagram-content">
+                <div class="mermaid">
+graph TB
+    subgraph Frontend["Frontend (React - Vite)"]
+        Menu["Menu.jsx<br/>Show categories<br/>& menu items"]
+        ItemCard["ItemCard.jsx<br/>Display item<br/>+ Add to cart"]
+        Cart["Cart.jsx<br/>Display cart items<br/>Checkout form"]
+        Reservation["Reservation.jsx<br/>Table booking"]
+        Gallery["Gallery.jsx<br/>Image gallery"]
+        NewsletterSignup["NewsletterSignup.jsx<br/>Email subscription"]
+        CartContext["CartContext<br/>Global cart state"]
+    end
+    
+    subgraph Backend["Backend (Flask)"]
+        API["api.py<br/>REST endpoints"]
+        Models["models.py<br/>Database models"]
+        DB["PostgreSQL<br/>Database"]
+    end
+    
+    subgraph Stripe["Stripe Integration"]
+        StripeServer["server.py<br/>Checkout session<br/>& webhooks"]
+        StripeAPI["Stripe API<br/>Payment processing"]
+    end
+    
+    Menu -->|fetch| API
+    ItemCard -->|add to cart| CartContext
+    Cart -->|display| CartContext
+    Cart -->|POST /stripe-checkout| API
+    
+    API -->|create Order| Models
+    Models -->|persist| DB
+    
+    API -->|fetch menu| DB
+    API -->|create session| StripeAPI
+    
+    StripeAPI -->|redirect| Cart
+    StripeAPI -->|POST webhook| StripeServer
+    StripeServer -->|verify & handle| StripeAPI
+    StripeServer -->|update Order| Models
+    Models -->|persist| DB
+    
+    Reservation -->|POST| API
+    NewsletterSignup -->|POST| API
+    Gallery -->|display images| Frontend
+    
+    CartContext -->|manage state| Cart
+                </div>
+            </div>
+            <div class="description">
+                <strong>Description:</strong> Displays how different components interact: React frontend communicates with Flask backend, which manages database and Stripe integration for payment processing.
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" onclick="downloadDiagram('class')">📥 Download Class Diagram</button>
+            <button class="btn" onclick="downloadDiagram('sequence')">📥 Download Sequence Diagram</button>
+            <button class="btn" onclick="downloadDiagram('activity')">📥 Download Activity Diagram</button>
+            <button class="btn" onclick="downloadDiagram('component')">📥 Download Component Diagram</button>
+        </div>
+        
+        <footer>
+            <p>Interactive UML Diagrams for Online Shop System with Stripe Payment Integration</p>
+            <p>Generated with Mermaid.js | © 2026</p>
+        </footer>
+    </div>
+    
+    <script>
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+        mermaid.contentLoaded();
+        
+        // Tab switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Remove active class from all
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.diagram-container').forEach(d => d.classList.remove('active'));
+                
+                // Add active class to clicked
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).classList.add('active');
+            });
+        });
+        
+        // Download functionality
+        function downloadDiagram(diagramId) {
+            const svgElement = document.querySelector(`#${diagramId} .mermaid svg`);
+            if (!svgElement) {
+                alert('Diagram is still loading. Please try again in a moment.');
+                return;
+            }
+            
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            img.onload = function() {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = `${diagramId}_diagram.png`;
+                link.click();
+            };
+            
+            img.src = 'data:image/svg+xml;base64,' + btoa(svgData);
+        }
+    </script>
+</body>
+</html>
