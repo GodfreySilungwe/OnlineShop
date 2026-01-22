@@ -653,3 +653,93 @@ def newsletter_signup():
     db.session.commit()
     return jsonify({'status': 'subscribed', 'id': sub.id}), 201
 
+
+# --- Airtel Money integration ------------------------------------------------
+from .airtel_client import AirtelClient
+import json
+
+airtel_client = AirtelClient()
+
+
+@api_bp.route('/airtel/merchants', methods=['POST'])
+def airtel_register_merchants():
+    """Register one or more merchants with Airtel. Expects JSON body with `merchants` list."""
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    data = request.get_json() or {}
+    merchants = data.get('merchants')
+    if not merchants:
+        return jsonify({'error': 'merchants list required'}), 400
+    try:
+        resp = airtel_client.register_merchants(merchants)
+        try:
+            body = resp.json()
+        except Exception:
+            body = {'raw': resp.text}
+        return jsonify({'status_code': resp.status_code, 'response': body}), resp.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/airtel/merchants', methods=['GET'])
+def airtel_fetch_merchants():
+    """Fetch registered merchants from Airtel."""
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    try:
+        resp = airtel_client.fetch_merchants()
+        try:
+            body = resp.json()
+        except Exception:
+            body = {'raw': resp.text}
+        return jsonify({'status_code': resp.status_code, 'response': body}), resp.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/airtel/payments', methods=['POST'])
+def airtel_create_payment():
+    """Create a payment (transfer) via Airtel. Forwards JSON body to Airtel API."""
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    payload = request.get_json() or {}
+    if not payload:
+        return jsonify({'error': 'json payload required'}), 400
+    try:
+        resp = airtel_client.create_payment(payload)
+        try:
+            body = resp.json()
+        except Exception:
+            body = {'raw': resp.text}
+        return jsonify({'status_code': resp.status_code, 'response': body}), resp.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/airtel/payments/refund', methods=['POST'])
+def airtel_refund_payment():
+    """Request a refund for a transaction via Airtel."""
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    payload = request.get_json() or {}
+    if not payload:
+        return jsonify({'error': 'json payload required'}), 400
+    try:
+        resp = airtel_client.refund_payment(payload)
+        try:
+            body = resp.json()
+        except Exception:
+            body = {'raw': resp.text}
+        return jsonify({'status_code': resp.status_code, 'response': body}), resp.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@api_bp.route('/airtel/notify/<partnerCode>', methods=['POST'])
+def airtel_notify(partnerCode):
+    """Receive notifications from Airtel. This is a simple receiver that logs payload."""
+    data = request.get_json(silent=True) or {}
+    # For now: persist nothing, but log to stdout and return success
+    print(f"[AIRTEL NOTIFY] partner={partnerCode} payload=", json.dumps(data))
+    return jsonify({'st': True, 'msg': 'SUCCESS'}), 200
+
