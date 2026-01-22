@@ -87,19 +87,14 @@ def checkout():
 
 @api_bp.route('/stripe-checkout', methods=['POST'])
 def stripe_checkout():
-    """Create a Stripe checkout session for the cart items."""
+    """Create a Stripe checkout session for the cart items and create an order in database."""
     # Ensure Stripe API key is set at runtime
     stripe_key = os.getenv('STRIPE_SECRET_KEY')
     
-    # Debug: Log the EXACT key being used (first 30 and last 10 chars)
     if stripe_key:
-        print(f"[DEBUG] Raw key from env (length={len(stripe_key)}): {stripe_key[:30]}...{stripe_key[-10:]}")
-        print(f"[DEBUG] Key starts with 'sk_test_': {stripe_key.startswith('sk_test_')}")
-        print(f"[DEBUG] Key has whitespace: {' ' in stripe_key or chr(9) in stripe_key}")
         stripe.api_key = stripe_key
-        print(f"[DEBUG] stripe.api_key set to: {stripe.api_key[:30]}...{stripe.api_key[-10:]}")
     else:
-        print("[DEBUG] Stripe API Key is EMPTY!")
+        return jsonify({'error': 'Stripe is not configured'}), 500
     
     data = request.get_json() or {}
     items = data.get('items', [])
@@ -114,23 +109,42 @@ def stripe_checkout():
         return jsonify({'error': 'Stripe is not configured'}), 500
 
     try:
-        # Prepare line items for Stripe
+        # STEP 1: Create order in database BEFORE creating Stripe session
+        print(f"[INFO] Creating order for customer: {customer_name}")
+        order = Order(
+            customer_name=customer_name,
+            customer_email=customer_email,
+            customer_phone=customer_phone,
+            status='pending'
+        )
+        db.session.add(order)
+        db.session.flush()  # Get the order ID
+        order_id = order.id
+        print(f"[INFO] Order created with ID: {order_id}")
+        
+        # STEP 2: Prepare line items for Stripe and create OrderItems
         line_items = []
         order_total_cents = 0
-        
-        # Debug: log the key being used
-        print(f"[DEBUG] Attempting Stripe checkout with key: {stripe.api_key[:50]}..." if stripe.api_key else "[DEBUG] NO KEY!")
-        print(f"[DEBUG] Key starts with 'sk_test_': {stripe.api_key.startswith('sk_test_') if stripe.api_key else 'N/A'}")
-        print(f"[DEBUG] Key length: {len(stripe.api_key) if stripe.api_key else 0}")
         
         for it in items:
             menu_item = MenuItem.query.get(it.get('menu_item_id'))
             if not menu_item:
+                db.session.rollback()
                 return jsonify({'error': f"Menu item {it.get('menu_item_id')} not found"}), 400
             
             qty = int(it.get('qty', 1))
             price_cents = int(menu_item.price_cents)
             order_total_cents += price_cents * qty
+            
+            # Create OrderItem
+            order_item = OrderItem(
+                order_id=order_id,
+                menu_item_id=menu_item.id,
+                qty=qty,
+                unit_price_cents=price_cents
+            )
+            db.session.add(order_item)
+            print(f"[INFO] Added item {menu_item.name} (qty: {qty}) to order")
             
             # For Stripe, price is in cents
             line_items.append({
@@ -144,35 +158,44 @@ def stripe_checkout():
                 },
                 'quantity': qty,
             })
+        
+        # Update order total
+        order.total_cents = order_total_cents
+        db.session.commit()
+        print(f"[INFO] Order {order_id} saved with total: {order_total_cents} cents")
 
-        # Get domain from environment or use localhost
+        # STEP 3: Create Stripe checkout session
         domain = os.getenv('DOMAIN', 'http://localhost:5173')
         
-        # Create Stripe checkout session
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=line_items,
             mode='payment',
             customer_email=customer_email,
-            success_url=f"{domain}/success?session_id={{CHECKOUT_SESSION_ID}}",
+            success_url=f"{domain}/success?session_id={{CHECKOUT_SESSION_ID}}&order_id={order_id}",
             cancel_url=f"{domain}/cart",
             metadata={
+                'order_id': str(order_id),
                 'customer_name': customer_name,
                 'customer_phone': customer_phone,
             }
         )
+        
+        print(f"[INFO] Stripe session created: {checkout_session.id}")
 
         return jsonify({
             'sessionId': checkout_session.id,
             'url': checkout_session.url,
+            'orderId': order_id,
         }), 200
 
     except stripe.error.StripeError as e:
         print(f"[ERROR] Stripe error: {str(e)}")
-        print(f"[ERROR] Error type: {type(e).__name__}")
+        db.session.rollback()
         return jsonify({'error': str(e)}), 400
     except Exception as e:
         print(f"[ERROR] General exception: {str(e)}")
+        db.session.rollback()
         return jsonify({'error': 'Failed to create checkout session'}), 500
 
 
