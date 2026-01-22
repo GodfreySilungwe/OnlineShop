@@ -3,6 +3,11 @@
 Flask application entry point
 """
 import os
+from dotenv import load_dotenv
+
+# Load environment variables FIRST before importing the app
+load_dotenv()
+
 from backend.app import create_app, db
 
 app = create_app()

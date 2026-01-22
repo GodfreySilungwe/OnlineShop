@@ -9,8 +9,13 @@ from . import db
 from .models import MenuItem, Category, Order, OrderItem, Subscriber, Customer, Reservation, Promotion
 import stripe
 
-# Initialize Stripe with API key
-stripe.api_key = os.getenv('STRIPE_SECRET_KEY', '')
+# Explicitly use test mode with test keys
+stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
+# Verify we're in test mode
+if stripe.api_key and stripe.api_key.startswith('sk_test_'):
+    print("[INFO] Using Stripe TEST environment")
+else:
+    print("[WARNING] Not using Stripe test keys!")
 
 # Simple admin secret (dev-only). Configure ADMIN_SECRET in your environment or .env
 ADMIN_SECRET = os.getenv('ADMIN_SECRET', 'dev-secret')
@@ -83,6 +88,19 @@ def checkout():
 @api_bp.route('/stripe-checkout', methods=['POST'])
 def stripe_checkout():
     """Create a Stripe checkout session for the cart items."""
+    # Ensure Stripe API key is set at runtime
+    stripe_key = os.getenv('STRIPE_SECRET_KEY')
+    
+    # Debug: Log the EXACT key being used (first 30 and last 10 chars)
+    if stripe_key:
+        print(f"[DEBUG] Raw key from env (length={len(stripe_key)}): {stripe_key[:30]}...{stripe_key[-10:]}")
+        print(f"[DEBUG] Key starts with 'sk_test_': {stripe_key.startswith('sk_test_')}")
+        print(f"[DEBUG] Key has whitespace: {' ' in stripe_key or chr(9) in stripe_key}")
+        stripe.api_key = stripe_key
+        print(f"[DEBUG] stripe.api_key set to: {stripe.api_key[:30]}...{stripe.api_key[-10:]}")
+    else:
+        print("[DEBUG] Stripe API Key is EMPTY!")
+    
     data = request.get_json() or {}
     items = data.get('items', [])
     customer_name = data.get('customer_name')
@@ -99,6 +117,11 @@ def stripe_checkout():
         # Prepare line items for Stripe
         line_items = []
         order_total_cents = 0
+        
+        # Debug: log the key being used
+        print(f"[DEBUG] Attempting Stripe checkout with key: {stripe.api_key[:50]}..." if stripe.api_key else "[DEBUG] NO KEY!")
+        print(f"[DEBUG] Key starts with 'sk_test_': {stripe.api_key.startswith('sk_test_') if stripe.api_key else 'N/A'}")
+        print(f"[DEBUG] Key length: {len(stripe.api_key) if stripe.api_key else 0}")
         
         for it in items:
             menu_item = MenuItem.query.get(it.get('menu_item_id'))
@@ -145,8 +168,11 @@ def stripe_checkout():
         }), 200
 
     except stripe.error.StripeError as e:
+        print(f"[ERROR] Stripe error: {str(e)}")
+        print(f"[ERROR] Error type: {type(e).__name__}")
         return jsonify({'error': str(e)}), 400
     except Exception as e:
+        print(f"[ERROR] General exception: {str(e)}")
         return jsonify({'error': 'Failed to create checkout session'}), 500
 
 

@@ -13,6 +13,14 @@ import stripe
 from stripe import StripeClient
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 
+# Verify we're in test mode
+if stripe.api_key and stripe.api_key.startswith('sk_test_'):
+    print("[INFO] Stripe server using TEST environment")
+else:
+    print("[WARNING] Stripe server NOT using test keys!")
+
+print(f"Stripe API Key loaded: {stripe.api_key[:20]}..." if stripe.api_key else "Stripe API Key NOT loaded!")
+
 stripe_client = StripeClient(str(os.getenv("STRIPE_SECRET_KEY")))
 
 app = Flask(__name__)
