@@ -5,12 +5,17 @@ import requests
 class AirtelClient:
     def __init__(self):
         # Default to Airtel staging root; the client composes the API prefix below
+        # Use staging base URL by default; can be overridden with AIRTEL_BASE_URL env var
         self.base = os.getenv('AIRTEL_BASE_URL', 'https://openapiuat.airtel.mw')
         # API prefix (path) used by the merchant collection APIs
         self.api_prefix = os.getenv('AIRTEL_API_PREFIX', 'merchant-collection/v1').strip('/')
         self.token = os.getenv('AIRTEL_BEARER_TOKEN')
         self.country = os.getenv('AIRTEL_COUNTRY', 'MW')
         self.currency = os.getenv('AIRTEL_CURRENCY', 'MWK')
+        # Receiving number used by the merchant to receive payments (default provided)
+        # Can be overridden with AIRTEL_RECEIVING_NUMBER env var
+        self.receiving_number = os.getenv('AIRTEL_RECEIVING_NUMBER', '+265995718815')
+        print(f"[INFO] AirtelClient using base URL: {self.base} and receiving number: {self.receiving_number}")
 
     def _headers(self):
         h = {

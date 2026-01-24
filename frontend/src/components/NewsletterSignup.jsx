@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import './components.css'
 
 export default function NewsletterSignup() {
   const [email, setEmail] = useState('')
@@ -27,8 +28,8 @@ export default function NewsletterSignup() {
   }
 
   return (
-    <form onSubmit={handleSubmit} style={{ display: 'inline-flex', gap: 8, alignItems: 'center' }}>
-      <input type="email" placeholder="your email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ padding: '4px 8px' }} />
+    <form onSubmit={handleSubmit} className="inline-flex-center">
+      <input className="input-small" type="email" placeholder="your email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       <button type="submit">Subscribe</button>
       {status && <span style={{ marginLeft: 8 }}>{status}</span>}
     </form>

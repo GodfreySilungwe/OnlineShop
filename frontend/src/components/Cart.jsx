@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
 import { useCart } from '../context/CartContext'
+import './Cart.css'
 
 export default function Cart() {
   const { items, clearCart, addToCart } = useCart()
   const [loading, setLoading] = useState(false)
   const [orderId, setOrderId] = useState(null)
+  const [paymentMethod, setPaymentMethod] = useState('card')
   const [customer, setCustomer] = useState({ customer_name: '', customer_email: '', customer_phone: '' })
   const [error, setError] = useState(null)
 
@@ -31,21 +33,45 @@ export default function Cart() {
     }
     setLoading(true)
     try {
-      // Call Stripe checkout endpoint
-      const res = await fetch('/api/stripe-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setError(data.error || 'Checkout failed')
-      } else {
-        // Redirect to Stripe checkout
-        if (data.url) {
-          window.location.href = data.url
+      let res, data
+      if (paymentMethod === 'airtel') {
+        // Call backend Airtel checkout which will create an order and request Airtel payment
+        res = await fetch('/api/airtel-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        data = await res.json()
+        if (!res.ok) {
+          setError(data.error || 'Airtel checkout failed')
         } else {
-          setError('Failed to get checkout URL')
+          // If Airtel returns a redirect URL, follow it; otherwise show order id / message
+          const maybeUrl = data.url || (data.response && (data.response.redirectUrl || data.response.url || data.response.paymentUrl))
+          if (maybeUrl) {
+            window.location.href = maybeUrl
+          } else if (data.orderId) {
+            setOrderId(data.orderId)
+          } else {
+            setOrderId(data.order_id || data.orderId)
+          }
+        }
+      } else {
+        // Call Stripe checkout endpoint
+        res = await fetch('/api/stripe-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        })
+        data = await res.json()
+        if (!res.ok) {
+          setError(data.error || 'Checkout failed')
+        } else {
+          // Redirect to Stripe checkout
+          if (data.url) {
+            window.location.href = data.url
+          } else {
+            setError('Failed to get checkout URL')
+          }
         }
       }
     } catch (err) {
@@ -69,9 +95,9 @@ export default function Cart() {
     <div className="cart">
       <main className="cart-main">
         <h2>Cart</h2>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+        <div className="cart-header-row">
           <div className="muted-small">{items.length === 0 ? 'Your cart is empty' : `${items.length} item(s)`}</div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <div className="cart-actions">
             <button type="button" className="btn" onClick={() => {
               if (!items.length) return
               if (window.confirm('Clear cart?')) clearCart()
@@ -79,23 +105,21 @@ export default function Cart() {
           </div>
         </div>
 
-        <ul>
+        <ul className="cart-list">
           {items.map((it) => {
             const hasDiscount = it.discount_percent && it.discount_percent > 0
             const originalPrice = it.original_price_cents ? (it.original_price_cents / 100).toFixed(2) : null
             const discountedPrice = (it.price_cents / 100).toFixed(2)
             return (
-              <li key={it.id} style={{ marginBottom: 12, padding: 8, backgroundColor: hasDiscount ? '#f0f8ff' : 'transparent', borderRadius: 4, border: hasDiscount ? '1px solid #e0f0ff' : 'none' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                  <div>
+              <li key={it.id} className={`cart-item ${hasDiscount ? 'discounted' : ''}`}>
+                <div className="cart-item-row">
+                  <div className="cart-item-info">
                     <strong>{it.name}</strong> x {it.qty}
-                    {hasDiscount && <span style={{ marginLeft: 8, color: '#ff6b6b', fontWeight: 600, fontSize: 12 }}>🎉 {it.discount_percent}% OFF</span>}
+                    {hasDiscount && <span className="cart-item-discount">🎉 {it.discount_percent}% OFF</span>}
                   </div>
-                  <div style={{ textAlign: 'right' }}>
+                  <div className="cart-price-area">
                     {hasDiscount && originalPrice && (
-                      <div style={{ fontSize: 12, color: '#999', textDecoration: 'line-through' }}>
-                        ${originalPrice} each
-                      </div>
+                      <div className="cart-price-original">${originalPrice} each</div>
                     )}
                     <div>{discountedPrice} each</div>
                   </div>
@@ -105,31 +129,42 @@ export default function Cart() {
           })}
         </ul>
 
-        <p>
+        <p className="cart-total">
           <strong>Total: </strong>
           {(totalCents / 100).toFixed(2)}
           {savings > 0 && (
-            <span style={{ marginLeft: 12, color: '#ff6b6b', fontWeight: 600 }}>
+            <span className="cart-savings">
               💰 You saved: ${(savings / 100).toFixed(2)}
             </span>
           )}
         </p>
 
-        <form onSubmit={handleCheckout} style={{ maxWidth: 480 }}>
+        <form onSubmit={handleCheckout} className="cart-form">
+          <div className="payment-row">
+            <div className="payment-label">Payment method:</div>
+            <label className="payment-option">
+              <input type="radio" name="payment" value="card" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} />
+              <span>Stripe</span>
+            </label>
+            <label className="payment-option">
+              <input type="radio" name="payment" value="airtel" checked={paymentMethod === 'airtel'} onChange={() => setPaymentMethod('airtel')} />
+              <span>Airtel Money</span>
+            </label>
+          </div>
           <div>
             <label>Name</label>
-            <input value={customer.customer_name} onChange={(e) => setCustomer({ ...customer, customer_name: e.target.value })} />
+            <input className="input" value={customer.customer_name} onChange={(e) => setCustomer({ ...customer, customer_name: e.target.value })} />
           </div>
           <div>
             <label>Email</label>
-            <input value={customer.customer_email} onChange={(e) => setCustomer({ ...customer, customer_email: e.target.value })} />
+            <input className="input" value={customer.customer_email} onChange={(e) => setCustomer({ ...customer, customer_email: e.target.value })} />
           </div>
           <div>
             <label>Phone</label>
-            <input value={customer.customer_phone} onChange={(e) => setCustomer({ ...customer, customer_phone: e.target.value })} />
+            <input className="input" value={customer.customer_phone} onChange={(e) => setCustomer({ ...customer, customer_phone: e.target.value })} />
           </div>
-          {error && <div style={{ color: 'red' }}>{error}</div>}
-          <div style={{ marginTop: 12 }}>
+          {error && <div className="error">{error}</div>}
+          <div className="checkout-button-wrap">
             <button type="submit" disabled={loading || items.length === 0}>{loading ? 'Processing...' : 'Checkout'}</button>
           </div>
         </form>

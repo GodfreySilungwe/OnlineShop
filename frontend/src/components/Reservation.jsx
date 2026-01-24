@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import './components.css'
 
 export default function Reservation() {
   const [name, setName] = useState('')
@@ -49,30 +50,30 @@ export default function Reservation() {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto' }}>
+    <div className="max-width-600">
       <h2>Make a Reservation</h2>
       <form onSubmit={submit}>
-        <div style={{ marginBottom: 12 }}>
+        <div className="mb-12">
           <label>Name *</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} required style={{ width: '100%' }} />
+          <input className="input w-full" value={name} onChange={(e) => setName(e.target.value)} required />
         </div>
-        <div style={{ marginBottom: 12 }}>
+        <div className="mb-12">
           <label>Email *</label>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%' }} />
+          <input className="input w-full" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
         </div>
-        <div style={{ marginBottom: 12 }}>
+        <div className="mb-12">
           <label>Phone (optional)</label>
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%' }} />
+          <input className="input w-full" value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
-        <div style={{ marginBottom: 12 }}>
+        <div className="mb-12">
           <label>Number of guests</label>
-          <input type="number" min="1" max="20" value={guests} onChange={(e) => setGuests(e.target.value)} style={{ width: 120 }} />
+          <input className="input w-120" type="number" min="1" max="20" value={guests} onChange={(e) => setGuests(e.target.value)} />
         </div>
-        <div style={{ marginBottom: 12 }}>
+        <div className="mb-12">
           <label>Time slot *</label>
-          <input type="datetime-local" value={timeSlot} onChange={(e) => setTimeSlot(e.target.value)} required />
+          <input className="input" type="datetime-local" value={timeSlot} onChange={(e) => setTimeSlot(e.target.value)} required />
         </div>
-        <div style={{ marginBottom: 12 }}>
+        <div className="mb-12">
           <label>
             <input type="checkbox" checked={newsletter} onChange={(e) => setNewsletter(e.target.checked)} />
             &nbsp;Subscribe to newsletter
@@ -84,12 +85,12 @@ export default function Reservation() {
       </form>
 
       {message && (
-        <div style={{ marginTop: 16, padding: 12, background: message.type === 'error' ? '#ffe6e6' : '#e6ffe6' }}>
+        <div className={`message-area ${message.type === 'error' ? 'message-error' : 'message-ok'}`}>
           {message.text}
         </div>
       )}
 
-      <section style={{ marginTop: 24 }}>
+      <section className="section-margin">
         <h3>Notes</h3>
         <p>We have 30 tables. If a chosen time slot is fully booked you'll be asked to choose another time.</p>
       </section>

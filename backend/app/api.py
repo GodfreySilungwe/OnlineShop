@@ -661,6 +661,72 @@ import json
 airtel_client = AirtelClient()
 
 
+@api_bp.route('/airtel-checkout', methods=['POST'])
+def airtel_checkout():
+    """Create an order and initiate an Airtel payment request for the cart items."""
+    data = request.get_json() or {}
+    items = data.get('items', [])
+    customer_name = data.get('customer_name')
+    customer_email = data.get('customer_email')
+    customer_phone = data.get('customer_phone')
+
+    if not items or not customer_name:
+        return jsonify({'error': 'Missing items or customer name'}), 400
+
+    try:
+        # Create order and order items
+        order = Order(
+            customer_name=customer_name,
+            customer_email=customer_email,
+            customer_phone=customer_phone,
+            status='pending'
+        )
+        db.session.add(order)
+        db.session.flush()
+        order_id = order.id
+
+        order_total_cents = 0
+        for it in items:
+            menu_item = MenuItem.query.get(it.get('menu_item_id'))
+            if not menu_item:
+                db.session.rollback()
+                return jsonify({'error': f"Menu item {it.get('menu_item_id')} not found"}), 400
+            qty = int(it.get('qty', 1))
+            price_cents = int(menu_item.price_cents)
+            order_total_cents += price_cents * qty
+            order_item = OrderItem(order_id=order_id, menu_item_id=menu_item.id, qty=qty, unit_price_cents=price_cents)
+            db.session.add(order_item)
+
+        order.total_cents = order_total_cents
+        db.session.commit()
+
+        # Prepare a minimal Airtel payload. Adjust fields to match your Airtel account requirements.
+        amount_major = order_total_cents / 100.0
+        payload = {
+            'amount': amount_major,
+            'currency': airtel_client.currency,
+            'receiving_number': airtel_client.receiving_number,
+            'merchant_number': airtel_client.receiving_number,
+            'customer_name': customer_name,
+            'customer_phone': customer_phone,
+            'order_id': order_id,
+            'description': f'Order {order_id}'
+        }
+
+        resp = airtel_client.create_payment(payload)
+        try:
+            body = resp.json()
+        except Exception:
+            body = {'raw': resp.text}
+
+        return jsonify({'orderId': order_id, 'status_code': resp.status_code, 'response': body}), resp.status_code
+
+    except Exception as e:
+        print(f"[ERROR] Airtel checkout error: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': 'Failed to create Airtel checkout'}), 500
+
+
 @api_bp.route('/airtel/merchants', methods=['POST'])
 def airtel_register_merchants():
     """Register one or more merchants with Airtel. Expects JSON body with `merchants` list."""
