@@ -59,7 +59,7 @@ export default function Menu({ categories = [], searchQuery = '', onSearchChange
 
         {promos.length === 0 && (
           <div className="promo-empty">
-            <p style={{ margin: 0, fontSize: 14 }}>No active promotions at the moment</p>
+            <p>No active promotions at the moment</p>
           </div>
         )}
 
@@ -70,7 +70,7 @@ export default function Menu({ categories = [], searchQuery = '', onSearchChange
                 <div className="promo-left">
                   <div className="promo-category">{p.name}</div>
                   <div className="promo-sub">{p.category}</div>
-                  <div style={{ fontSize: 12, opacity: 0.85, marginBottom: 8, lineHeight: 1.4 }}>{p.description}</div>
+                  <div className="promo-sub">{p.description}</div>
                   <div className="tag-badge">{p.discount_percent}% OFF</div>
                 </div>
                 <div className="price-column">
@@ -119,7 +119,7 @@ export default function Menu({ categories = [], searchQuery = '', onSearchChange
               <section key={c.id} className="category category-section">
                 <div className="category-header">
                   <div className="category-icon">{color.icon}</div>
-                  <h2 className="category-title" style={{ background: color.bg, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>{c.name}</h2>
+                  <h2 className="category-title gradient-text" style={{ background: color.bg }}>{c.name}</h2>
                 </div>
                 <div className="items">
                   {(c.items || []).map((it) => (
@@ -131,7 +131,7 @@ export default function Menu({ categories = [], searchQuery = '', onSearchChange
           })
         )}
 
-        <section className="home-hero footer-contacts" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', marginTop: 20 }}>
+        <section className="home-hero footer-contacts">
           <div className="footer-item">
             <strong>Address</strong>
             <div>1234 Culinary Ave, Suite 100, Washington, DC 20002</div>
@@ -139,7 +139,7 @@ export default function Menu({ categories = [], searchQuery = '', onSearchChange
 
           <div className="footer-item">
             <strong>Phone</strong>
-            <div><a href="tel:(202)5554567" style={{ color: 'inherit', textDecoration: 'none' }}>(202) 555-4567</a></div>
+            <div><a href="tel:(202)5554567" className="footer-link">(202) 555-4567</a></div>
           </div>
 
           <div className="footer-item">

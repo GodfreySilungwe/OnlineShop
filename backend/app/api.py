@@ -700,20 +700,34 @@ def airtel_checkout():
         order.total_cents = order_total_cents
         db.session.commit()
 
-        # Prepare a minimal Airtel payload. Adjust fields to match your Airtel account requirements.
+        # Prepare Airtel merchant-collection compatible payload
+        # Airtel expects a structured payload with payee, payer, transaction and additional_info
+        # Transaction.amount is provided as a string (units in major currency)
         amount_major = order_total_cents / 100.0
-        payload = {
-            'amount': amount_major,
-            'currency': airtel_client.currency,
-            'receiving_number': airtel_client.receiving_number,
-            'merchant_number': airtel_client.receiving_number,
-            'customer_name': customer_name,
-            'customer_phone': customer_phone,
-            'order_id': order_id,
-            'description': f'Order {order_id}'
+        # Represent amount as integer string when possible, otherwise keep two decimals
+        if float(amount_major).is_integer():
+            amount_str = str(int(amount_major))
+        else:
+            amount_str = f"{amount_major:.2f}"
+
+        airtel_payload = {
+            'payee': {
+                # relationship_id typically represents the merchant/collector id; use configured receiving number
+                'relationship_id': airtel_client.receiving_number
+            },
+            'payer': {
+                'msisdn': customer_phone or ''
+            },
+            'transaction': {
+                'id': f'ORDER-{order_id}',
+                'amount': amount_str,
+                'reference': f'Order {order_id}'
+            },
+            'additional_info': {}
         }
 
-        resp = airtel_client.create_payment(payload)
+        # Use the Cash-in endpoint as per gateway example
+        resp = airtel_client.create_cashin(airtel_payload)
         try:
             body = resp.json()
         except Exception:

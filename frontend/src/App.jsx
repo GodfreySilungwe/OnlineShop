@@ -38,10 +38,10 @@ function HeaderBar({ searchQuery, onSearchChange }) {
 
   return (
     <header className="app-header">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
-        <nav style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+      <div className="header-row">
+        <nav className="nav-row">
           <Link to="/">Home</Link>
-          <Link to="/cart">Cart{total > 0 && <span style={badgeStyle}>{total}</span>}</Link>
+          <Link to="/cart">Cart{total > 0 && <span className="badge">{total}</span>}</Link>
           <Link to="/about">About</Link>
           <Link to="/reserve">Reserve</Link>
           <Link to="/admin">Admin</Link>
@@ -55,17 +55,9 @@ function HeaderBar({ searchQuery, onSearchChange }) {
           placeholder="Search items..."
           value={searchQuery}
           onChange={handleSearchChange}
-          style={{
-            padding: '8px 12px',
-            fontSize: 14,
-            border: '1px solid #ddd',
-            borderRadius: 6,
-            marginLeft: 'auto',
-            width: 250,
-            maxWidth: '100%'
-          }}
+          className="search-input"
         />
-        <div style={{ marginLeft: 12 }}>
+        <div className="ml-12">
           <NewsletterSignup />
         </div>
       </div>

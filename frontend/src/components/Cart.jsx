@@ -36,23 +36,41 @@ export default function Cart() {
       let res, data
       if (paymentMethod === 'airtel') {
         // Call backend Airtel checkout which will create an order and request Airtel payment
-        res = await fetch('/api/airtel-checkout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        })
-        data = await res.json()
+        try {
+          res = await fetch('/api/airtel-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          })
+        } catch (networkErr) {
+          setError('Network error: ' + String(networkErr))
+          return
+        }
+
+        let body = null
+        try {
+          body = await res.json()
+        } catch (parseErr) {
+          // non-JSON response
+          try {
+            body = { text: await res.text() }
+          } catch (e) {
+            body = { error: 'failed to read response' }
+          }
+        }
+
         if (!res.ok) {
-          setError(data.error || 'Airtel checkout failed')
+          const errMsg = (body && (body.error || body.message)) || `Airtel checkout failed (status ${res.status})`
+          setError(errMsg)
         } else {
           // If Airtel returns a redirect URL, follow it; otherwise show order id / message
-          const maybeUrl = data.url || (data.response && (data.response.redirectUrl || data.response.url || data.response.paymentUrl))
+          const maybeUrl = body.url || (body.response && (body.response.redirectUrl || body.response.url || body.response.paymentUrl))
           if (maybeUrl) {
             window.location.href = maybeUrl
-          } else if (data.orderId) {
-            setOrderId(data.orderId)
+          } else if (body.orderId) {
+            setOrderId(body.orderId)
           } else {
-            setOrderId(data.order_id || data.orderId)
+            setOrderId(body.order_id || body.orderId)
           }
         }
       } else {

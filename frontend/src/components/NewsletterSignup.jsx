@@ -31,7 +31,7 @@ export default function NewsletterSignup() {
     <form onSubmit={handleSubmit} className="inline-flex-center">
       <input className="input-small" type="email" placeholder="your email" value={email} onChange={(e) => setEmail(e.target.value)} required />
       <button type="submit">Subscribe</button>
-      {status && <span style={{ marginLeft: 8 }}>{status}</span>}
+      {status && <span className="ml-8">{status}</span>}
     </form>
   )
 }

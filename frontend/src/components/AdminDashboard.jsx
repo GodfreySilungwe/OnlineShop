@@ -315,15 +315,15 @@ export default function AdminDashboard() {
 
       {adminSecret && (
         <div>
-          <div style={{ marginBottom: 12 }}>
+          <div className="mb-12">
             <button onClick={() => setTab('orders')} disabled={tab === 'orders'}>Orders</button>
-            <button onClick={() => setTab('categories')} disabled={tab === 'categories'} style={{ marginLeft: 8 }}>Categories</button>
-            <button onClick={() => setTab('menu')} disabled={tab === 'menu'} style={{ marginLeft: 8 }}>Menu Items</button>
-            <button onClick={() => setTab('promotions')} disabled={tab === 'promotions'} style={{ marginLeft: 8 }}>Promotions</button>
-            <button onClick={() => setTab('reservations')} disabled={tab === 'reservations'} style={{ marginLeft: 8 }}>Reservations</button>
+            <button onClick={() => setTab('categories')} disabled={tab === 'categories'} className="ml-8">Categories</button>
+            <button onClick={() => setTab('menu')} disabled={tab === 'menu'} className="ml-8">Menu Items</button>
+            <button onClick={() => setTab('promotions')} disabled={tab === 'promotions'} className="ml-8">Promotions</button>
+            <button onClick={() => setTab('reservations')} disabled={tab === 'reservations'} className="ml-8">Reservations</button>
           </div>
 
-          {error && <div style={{ color: 'red' }}>{error}</div>}
+          {error && <div className="text-error">{error}</div>}
 
           {tab === 'orders' && (
             <div>
@@ -331,15 +331,15 @@ export default function AdminDashboard() {
               {orders.length === 0 && <p>No orders</p>}
               <ul>
                 {orders.map((o) => (
-                  <li key={o.id} style={{ marginBottom: 8 }}>
-                      <strong>#{o.id}</strong> — {o.customer_name} — {o.customer_phone} — {(o.total_cents/100).toFixed(2)} — {o.status}
-                    <div>
-                      {o.items.map((it, idx) => (
-                        <div key={idx}>item {it.menu_item_id} x {it.qty} @ {(it.unit_price_cents/100).toFixed(2)}</div>
-                      ))}
-                    </div>
-                  </li>
-                ))}
+                    <li key={o.id} className="mb-8">
+                        <strong>#{o.id}</strong> — {o.customer_name} — {o.customer_phone} — {(o.total_cents/100).toFixed(2)} — {o.status}
+                      <div>
+                        {o.items.map((it, idx) => (
+                          <div key={idx}>item {it.menu_item_id} x {it.qty} @ {(it.unit_price_cents/100).toFixed(2)}</div>
+                        ))}
+                      </div>
+                    </li>
+                  ))}
               </ul>
             </div>
           )}
@@ -348,7 +348,7 @@ export default function AdminDashboard() {
             <div>
               <h3>Reservations</h3>
               {reservations.length === 0 && <p>No reservations found</p>}
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="admin-table">
                 <thead>
                   <tr>
                     <th>ID</th>
@@ -369,21 +369,21 @@ export default function AdminDashboard() {
                         <br />
                         <small>{r.customer?.email}</small>
                         {r.customer?.phone && (
-                          <div style={{ marginTop: 6 }}><small>📞 {r.customer.phone}</small></div>
+                          <div className="mt-6"><small>📞 {r.customer.phone}</small></div>
                         )}
                       </td>
                       <td>{new Date(r.time_slot).toLocaleString()}</td>
                       <td>{r.table_number}</td>
                       <td>{r.guests}</td>
                       <td>{new Date(r.created_at).toLocaleString()}</td>
-                      <td style={{ display: 'flex', gap: 8 }}>
+                      <td className="table-flex-td">
                         <button onClick={async () => {
                           if (!window.confirm('Cancel this reservation?')) return
                           try {
                             await fetchAdmin(`/api/admin/reservations/${r.id}`, { method: 'DELETE' })
                             setReservations((prev) => prev.filter((x) => x.id !== r.id))
                           } catch (e) { setError(String(e)) }
-                        }} style={{ background: '#d9534f', color: 'white' }}>Cancel</button>
+                        }} className="btn-danger">Cancel</button>
                       </td>
                     </tr>
                   ))}
@@ -395,7 +395,7 @@ export default function AdminDashboard() {
           {tab === 'categories' && (
             <div>
               <h3>Categories</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="admin-table">
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -420,7 +420,7 @@ export default function AdminDashboard() {
                         )}
                       </td>
                       <td>{c.position}</td>
-                      <td style={{ display: 'flex', gap: 8 }}>
+                      <td className="table-flex-td">
                         {editingCategory?.id === c.id ? (
                           <>
                             <button onClick={() => updateCategory(c, { name: editingCategory.name })}>Save</button>
@@ -429,7 +429,7 @@ export default function AdminDashboard() {
                         ) : (
                           <>
                             <button onClick={() => setEditingCategory(c)}>Edit</button>
-                            <button onClick={() => deleteCategory(c)} style={{ background: '#d9534f', color: 'white' }}>Delete</button>
+                            <button onClick={() => deleteCategory(c)} className="btn-danger">Delete</button>
                           </>
                         )}
                       </td>
@@ -438,7 +438,7 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
 
-              <h4 style={{ marginTop: 12 }}>Create new category</h4>
+              <h4 className="mt-12">Create new category</h4>
               <form onSubmit={createCategory}>
                 <div>
                   <input name="cat_name" placeholder="Category name" required />
@@ -446,7 +446,7 @@ export default function AdminDashboard() {
                 <div>
                   <input name="cat_position" type="number" placeholder="Position (default 0)" defaultValue={0} />
                 </div>
-                <div style={{ marginTop: 8 }}>
+                <div className="mt-8">
                   <button type="submit">Create</button>
                 </div>
               </form>
@@ -458,7 +458,7 @@ export default function AdminDashboard() {
           {tab === 'menu' && (
             <div>
               <h3>Menu Items</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="admin-table">
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -474,7 +474,7 @@ export default function AdminDashboard() {
                         <td><input type="text" defaultValue={m.name} placeholder="Name" /></td>
                         <td><input type="number" defaultValue={(m.price_cents/100).toFixed(2)} placeholder="Price" step="0.01" /></td>
                         <td><input type="checkbox" defaultChecked={m.available} /></td>
-                        <td style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <td className="table-flex-td">
                           <input type="file" accept="image/*" />
                           <button onClick={(e) => {
                             const row = e.target.closest('tr')
@@ -499,10 +499,10 @@ export default function AdminDashboard() {
                         <td>{m.name}</td>
                         <td>{(m.price_cents/100).toFixed(2)}</td>
                         <td>{m.available ? 'yes' : 'no'}</td>
-                        <td style={{ display: 'flex', gap: 8 }}>
+                        <td className="table-flex-td">
                           <button onClick={() => toggleAvailable(m)}>{m.available ? 'Disable' : 'Enable'}</button>
                           <button onClick={() => setEditingItem(m)}>Edit</button>
-                          <button onClick={() => deleteItem(m)} style={{ background: '#d9534f', color: 'white' }}>Delete</button>
+                          <button onClick={() => deleteItem(m)} className="btn-danger">Delete</button>
                         </td>
                       </tr>
                     )
@@ -510,7 +510,7 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
 
-              <h4 style={{ marginTop: 12 }}>Create new item</h4>
+              <h4 className="mt-12">Create new item</h4>
               <form onSubmit={createItem}>
                 <div>
                   <input name="name" placeholder="Name" />
@@ -533,7 +533,7 @@ export default function AdminDashboard() {
                   <label>Image</label>
                   <input type="file" name="image" accept="image/*" />
                 </div>
-                <div style={{ marginTop: 8 }}>
+                <div className="mt-8">
                   <button type="submit">Create</button>
                 </div>
               </form>
@@ -543,7 +543,7 @@ export default function AdminDashboard() {
           {tab === 'promotions' && (
             <div>
               <h3>Promotions</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table className="admin-table">
                 <thead>
                   <tr>
                     <th>Item</th>
@@ -561,10 +561,10 @@ export default function AdminDashboard() {
                         <td>{itemName}</td>
                         <td>{p.percent}%</td>
                         <td>{p.active ? 'yes' : 'no'}</td>
-                        <td style={{ display: 'flex', gap: 8 }}>
+                        <td className="table-flex-td">
                           <button onClick={() => togglePromoActive(p)}>{p.active ? 'Disable' : 'Enable'}</button>
                           <button onClick={() => updatePromoPercent(p)}>Edit %</button>
-                          <button onClick={() => deletePromo(p)} style={{ background: '#d9534f', color: 'white' }}>Delete</button>
+                          <button onClick={() => deletePromo(p)} className="btn-danger">Delete</button>
                         </td>
                       </tr>
                     )
@@ -572,7 +572,7 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
 
-              <h4 style={{ marginTop: 12 }}>Create promotion for item</h4>
+              <h4 className="mt-12">Create promotion for item</h4>
               <form onSubmit={createPromo}>
                 <div>
                   <select name="menu_item_id" required>
@@ -586,7 +586,7 @@ export default function AdminDashboard() {
                   <input name="percent" type="number" min="0" max="100" placeholder="Discount %" required />
                 </div>
                 <div><label><input name="active" type="checkbox" defaultChecked /> Active</label></div>
-                <div style={{ marginTop: 8 }}>
+                <div className="mt-8">
                   <button type="submit">Create</button>
                 </div>
               </form>

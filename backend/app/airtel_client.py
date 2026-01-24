@@ -52,3 +52,21 @@ class AirtelClient:
         url = self._url('payments/refund')
         r = requests.post(url, json=payload, headers=self._headers(), timeout=30)
         return r
+    def create_cashin(self, payload):
+        """Call the Airtel `standard/v2/cashin/` endpoint.
+
+        This endpoint uses the root `/standard/v2/cashin/` path (not the configured
+        `AIRTEL_API_PREFIX`). It also supports additional headers `x-signature`
+        and `x-key` which should be provided via environment variables
+        `AIRTEL_SIGNATURE` and `AIRTEL_KEY`.
+        """
+        url = f"{self.base.rstrip('/')}/standard/v2/cashin/"
+        headers = self._headers()
+        sig = os.getenv('AIRTEL_SIGNATURE')
+        key = os.getenv('AIRTEL_KEY')
+        if sig:
+            headers['x-signature'] = sig
+        if key:
+            headers['x-key'] = key
+        r = requests.post(url, json=payload, headers=headers, timeout=30)
+        return r

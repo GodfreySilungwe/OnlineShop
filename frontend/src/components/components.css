@@ -43,6 +43,11 @@
 .price-old { font-size:11px; color:#999; text-decoration:line-through; margin-bottom:2px; }
 .price-current { font-size:18px; color:#ff6b6b; font-weight:700; }
 .price-plain { font-size:16px; }
+.discount-badge { position: absolute; top:12px; right:12px; background: linear-gradient(135deg,#ff6b6b 0%,#ee5a6f 100%); color:white; padding:6px 12px; border-radius:20px; font-weight:700; font-size:12px; box-shadow:0 4px 12px rgba(255,107,107,0.4); z-index:10; }
+.btn-gradient { background: var(--accent); color: white; border: none; padding: 8px 14px; border-radius: 6px; font-weight:600; cursor:pointer; font-size:13px; transition: all .2s; }
+.btn-gradient.discount { background: linear-gradient(135deg,#ff6b6b 0%,#ee5a6f 100%); box-shadow:0 4px 12px rgba(255,107,107,0.3); }
+
+.btn-add-large { padding: 10px 16px; border-radius: 8px; font-weight: 700; }
 .gallery-grid { display:flex; flex-wrap:wrap; gap:12px; }
 .gallery-img { width:100%; border-radius:6px; display:block; }
 .zoom-icon { color:white; font-size:14px; font-weight:bold; opacity:0; }
@@ -53,12 +58,68 @@
 .admin-table { width:100%; border-collapse:collapse; }
 .btn-danger { background:#d9534f; color:white; }
 .flex-gap { display:flex; gap:8px; align-items:center; }
-.table-flex-td { display:flex; gap:8px; }
+.table-flex-td { display:flex; gap:8px; align-items:center; }
 .muted { color:#666; }
 .section-margin-top { margin-top:24px; }
+
+/* Spacing helpers */
+.ml-8 { margin-left: 8px; }
+.mb-8 { margin-bottom: 8px; }
+.mt-6 { margin-top: 6px; }
+.mt-12 { margin-top: 12px; }
+.text-error { color: red; }
+
+/* Link styles */
+.link-accent { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+
+/* Thumbnail helper for ItemCard (backgroundImage set inline) */
+.thumb { height: 160px; background-size: cover; background-position: center; }
+
+/* Button hover lift */
+.btn-gradient:hover { transform: translateY(-2px); }
+
+/* Promo empty paragraph */
+.promo-empty p { margin: 0; font-size: 14px; }
+
+/* Gradient text helper (set background inline) */
+.gradient-text { -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+/* Discount percent inline */
+.discount-percent { margin-left: 8px; font-size: 13px; }
+
+/* Header / nav helpers */
+.header-row { display:flex; align-items:center; gap:16px; flex:1; }
+.nav-row { display:flex; gap:12px; align-items:center; }
+.badge { display: inline-block; min-width: 20px; padding: 2px 6px; border-radius: 12px; background: #ff6b6b; color: white; font-size: 12px; margin-left: 6px; -webkit-text-fill-color: white; }
+.search-input { padding: 8px 12px; font-size: 14px; border: 1px solid #ddd; border-radius: 6px; margin-left: auto; width: 250px; max-width: 100%; }
+.ml-12 { margin-left: 12px; }
+.my-6 { margin: 6px 0; }
+.m-0 { margin: 0; }
 
 /* Additional helpers used by Menu */
 .promo-empty { padding: 20px 0; text-align: center; opacity: 0.9; }
 .footer-contacts { border-top: 1px solid rgba(255,255,255,0.06); margin-top: 20px; display:flex; gap:24px; }
 .footer-link { color: inherit; text-decoration: none; }
+
+/* Gallery and Lightbox */
+.gallery-item { width: 240px; cursor: pointer; transition: transform 0.2s ease; position: relative; }
+.gallery-item:hover { transform: scale(1.05); }
+.gallery-meta { font-size: 12px; color: #666; margin-top: 4px; }
+.gallery-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background-color: rgba(0,0,0,0); border-radius: 6px; transition: background-color 0.2s ease; pointer-events: none; }
+.gallery-item:hover .gallery-overlay { background-color: rgba(0,0,0,0.35); }
+.gallery-item:hover .zoom-icon { opacity: 1; }
+
+.lightbox-backdrop { position: fixed; inset: 0; background-color: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.3s ease; }
+.lightbox-content { position: relative; max-width: 90vw; max-height: 90vh; display: flex; align-items: center; justify-content: center; }
+.lightbox-close { position: absolute; top: -40px; right: 0; background: none; border: none; color: white; font-size: 28px; cursor: pointer; padding: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; transition: opacity 0.2s ease; }
+.lightbox-img { max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 8px; animation: slideIn 0.3s ease; }
+.lightbox-nav { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: none; color: white; font-size: 32px; cursor: pointer; padding: 10px 15px; border-radius: 4px; transition: background 0.2s ease; }
+.lightbox-nav:hover { background: rgba(255,255,255,0.4); }
+.lightbox-prev { left: -60px; }
+.lightbox-next { right: -60px; }
+.lightbox-counter { position: absolute; bottom: -40px; left: 50%; transform: translateX(-50%); color: white; font-size: 14px; white-space: nowrap; }
+.lightbox-filename { position: absolute; bottom: -40px; right: 0; color: #aaa; font-size: 12px; max-width: 300px; text-align: right; overflow: hidden; text-overflow: ellipsis; }
+
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes slideIn { from { transform: translateY(8px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
 

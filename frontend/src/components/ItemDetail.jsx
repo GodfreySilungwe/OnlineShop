@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
+import './components.css'
 
 export default function ItemDetail() {
   const { id } = useParams()
@@ -47,28 +48,19 @@ export default function ItemDetail() {
         <strong>Price: </strong>
         {hasDiscount ? (
           <span>
-            <span style={{ fontSize: 14, color: '#999', textDecoration: 'line-through', marginRight: 8 }}>${(item.price_cents / 100).toFixed(2)}</span>
-            <span style={{ fontSize: 20, color: '#ff6b6b', fontWeight: 700 }}>${discountedPrice}</span>
-            <span style={{ marginLeft: 8, color: '#ff6b6b', fontSize: 13 }}>(-{item.discount_percent}%)</span>
+            <span className="price-old">${(item.price_cents / 100).toFixed(2)}</span>
+            <span className="price-current">${discountedPrice}</span>
+            <span className="price-current discount-percent">(-{item.discount_percent}%)</span>
           </span>
         ) : (
-          <strong>${(item.price_cents / 100).toFixed(2)}</strong>
+          <strong className="price-plain">${(item.price_cents / 100).toFixed(2)}</strong>
         )}
       </p>
 
-      <div style={{ marginTop: 12 }}>
+      <div className="mb-12">
         <button
           onClick={() => addToCart(item, 1)}
-          className="btn"
-          style={{
-            background: hasDiscount ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)' : 'var(--accent)',
-            color: 'white',
-            border: 'none',
-            padding: '10px 16px',
-            borderRadius: '8px',
-            fontWeight: 700,
-            cursor: 'pointer'
-          }}
+          className={`btn-gradient btn-add-large ${hasDiscount ? 'discount' : ''}`}
         >
           Add to cart {hasDiscount ? `— $${discountedPrice}` : ''}
         </button>
