@@ -2,82 +2,111 @@ import React from 'react'
 
 export default function About() {
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <h2>About Café Fausse</h2>
-      <p>
-        Owner: <strong>Café Fausse</strong>
-      </p>
-      <p>
-        Email: <a href="mailto:Email@Email.com">Email@Email.com</a>
-      </p>
-      <p>
-        Phone: <a href="tel:(202) 555-4567">(202) 555-456</a>
-      </p>
-      <p>
-        Welcome to Café Fausse — we serve carefully prepared coffee and freshly baked goods. Visit us to enjoy a relaxed atmosphere and delicious menu.
-      </p>
-
-      <section style={{ marginTop: 24 }}>
-        <h3>History</h3>
+    <div className="about-page">
+      {/* Hero Section */}
+      <section className="about-hero">
+        <span className="eyebrow">Our Heritage</span>
+        <h2>About GOSH CAFE</h2>
         <p>
-          Founded in 2010 by Chef Antonio Rossi and restaurateur Maria Lopez, Café Fausse blends traditional Italian flavors with modern culinary innovation. Our mission is to provide an unforgettable dining experience that reflects both quality and creativity.
+          A modern neighbourhood café built for those who appreciate exceptional coffee, locally sourced ingredients, and thoughtful hospitality in the heart of Lilongwe.
         </p>
       </section>
 
-      <section style={{ marginTop: 24 }}>
-        <h3>Founders</h3>
-        <div style={{ display: 'grid', gap: 12 }}>
-          <div>
-            <h4 style={{ margin: '6px 0' }}>Chef Antonio Rossi</h4>
-            <p style={{ margin: 0 }}>
-              Trained in Naples and Florence, Antonio brings two decades of experience in classic Italian cuisine and contemporary pastry techniques. His focus on seasonal ingredients and careful sourcing shapes our menu.
-            </p>
+      <div className="about-content">
+        {/* Story Section */}
+        <section className="about-section">
+          <div className="about-grid">
+            <div>
+              <span className="eyebrow">Our Story</span>
+              <h3>Where passion meets purpose</h3>
+              <p>
+                Started as a small coffee room with a clear vision — to deliver beautifully brewed coffee and freshly baked treats in an inviting atmosphere. We combine modern café culture with refined hospitality, ensuring every guest feels genuinely welcomed.
+              </p>
+              <p>
+                Today, GOSH CAFE stands as a community gathering place where coffee enthusiasts, professionals, and friends converge for meaningful moments and exceptional experiences in Malawi.
+              </p>
+            </div>
+            <div className="about-visual">
+              ☕
+            </div>
           </div>
+        </section>
 
-          <div>
-            <h4 style={{ margin: '6px 0' }}>Maria Lopez</h4>
-            <p style={{ margin: 0 }}>
-              Maria is an experienced restaurateur who has led hospitality teams across Europe and Latin America. She oversees the guest experience and community partnerships that make Café Fausse a neighborhood favorite.
-            </p>
+        {/* What Makes Us Different */}
+        <section className="about-features">
+          <span className="eyebrow">Why Choose Us</span>
+          <h3>What makes us different</h3>
+          
+          <div className="about-features-grid">
+            {[
+              {
+                icon: '🌱',
+                title: 'Premium Ingredients',
+                desc: 'We work with trusted local suppliers for coffee, dairy, grains, and seasonal produce. Quality starts with sourcing.'
+              },
+              {
+                icon: '✨',
+                title: 'Crafted Flavors',
+                desc: 'Every menu item is carefully balanced to deliver rich taste and simple elegance. Attention to detail in every bite.'
+              },
+              {
+                icon: '❤️',
+                title: 'Genuine Experience',
+                desc: 'Our team is trained to make you feel at home. We prioritize warm service and creating memorable moments.'
+              }
+            ].map((item, idx) => (
+              <div key={idx} className="about-feature-card">
+                <div className="about-feature-icon">{item.icon}</div>
+                <h4>{item.title}</h4>
+                <p>{item.desc}</p>
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section style={{ marginTop: 24 }}>
-        <h3>Our commitment</h3>
-        <p>
-          We believe in unforgettable dining: excellent food, warm service, and responsibly sourced ingredients. We partner with local farmers and producers to bring fresh, seasonal items to our kitchen whenever possible.
-        </p>
-      </section>
+        {/* Values Section */}
+        <section className="about-values">
+          <span className="eyebrow">Our Principles</span>
+          <h3>Values we stand by</h3>
+          
+          <div className="about-values-grid">
+            {[
+              { emoji: '⭐', title: 'Quality', desc: 'Freshly roasted beans, house-made pastries, and thoughtful recipes served every single day.' },
+              { emoji: '🤝', title: 'Hospitality', desc: 'Warm, genuine service in a calm, welcoming space for guests, friends, and families alike.' },
+              { emoji: '🌍', title: 'Community', desc: 'Supporting local producers and building a vibrant space where people naturally connect.' },
+              { emoji: '🌿', title: 'Sustainability', desc: 'Eco-conscious practices and partnerships to protect the environment for future generations.' }
+            ].map((val, idx) => (
+              <div key={idx} className="about-value-card">
+                <div className="about-value-emoji">{val.emoji}</div>
+                <h4>{val.title}</h4>
+                <p>{val.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-      <section style={{ marginTop: 24 }}>
-        <h3>Awards</h3>
-        <ul>
-          <li><strong>Local Coffee Awards 2024</strong> — Best Independent Café (Community Choice)</li>
-          <li><strong>City Food Guide 2023</strong> — Recommended for Breakfast & Brunch</li>
-          <li><strong>Artisan Baking Festival 2022</strong> — Best Croissant (Runner-up)</li>
-        </ul>
-      </section>
-
-      <section style={{ marginTop: 24 }}>
-        <h3>What customers say</h3>
-        <div style={{ display: 'grid', gap: 12 }}>
-          <blockquote style={{ borderLeft: '4px solid #ddd', paddingLeft: 12 }}>
-            “The coffee is consistently excellent and the staff are so welcoming — my go-to spot every weekend.”
-            <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>— A. Mwale</div>
-          </blockquote>
-
-          <blockquote style={{ borderLeft: '4px solid #ddd', paddingLeft: 12 }}>
-            “Loved the almond croissant — perfectly flaky. Cozy space and great music.”
-            <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>— J. Banda</div>
-          </blockquote>
-
-          <blockquote style={{ borderLeft: '4px solid #ddd', paddingLeft: 12 }}>
-            “Quick service, friendly staff, and excellent value. Highly recommend!”
-            <div style={{ fontSize: 12, color: '#666', marginTop: 6 }}>— M. Phiri</div>
-          </blockquote>
-        </div>
-      </section>
+        {/* Contact Section */}
+        <section className="about-contact">
+          <h3>Ready to join us?</h3>
+          <p>
+            Visit our café to experience the GOSH CAFE difference. We're open daily and always happy to welcome new friends.
+            Drop by for a handcrafted coffee, a seasonal brunch, or an evening treat. We welcome walk-ins and reservations, and our team is happy to help you plan the perfect visit.
+          </p>
+          <div className="about-contact-info">
+            <div><strong>Address:</strong> 23 Market Street, Lilongwe, Malawi</div>
+            <div><strong>Phone:</strong> <a href="tel:+265999000000">+265 999 000 000</a></div>
+            <div><strong>Email:</strong> <a href="mailto:hello@goshcafe.mw">hello@goshcafe.mw</a></div>
+          </div>
+          <div className="about-actions">
+            <a href="/menu" className="about-btn">
+              Explore Our Menu
+            </a>
+            <a href="/reserve" className="about-btn about-btn-secondary">
+              Make a Reservation
+            </a>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

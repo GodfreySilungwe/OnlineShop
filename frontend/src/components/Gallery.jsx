@@ -31,47 +31,26 @@ export default function Gallery() {
   const prevImage = () => setSelectedIndex((prev) => (prev - 1 + images.length) % images.length)
   const nextImage = () => setSelectedIndex((prev) => (prev + 1) % images.length)
 
-  if (error) return <div>Error loading gallery: {error}</div>
+  if (error) return <div className="error-message">Error loading gallery: {error}</div>
 
   const currentImg = selectedIndex !== null ? images[selectedIndex] : null
   const currentUrl = currentImg ? `/api/images/${encodeURIComponent(currentImg)}` : ''
 
   return (
-    <div>
-      <h2>Gallery</h2>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+    <div className="gallery-page">
+      <section className="page-hero gallery-hero">
+        <div>
+          <span className="eyebrow">Our space</span>
+          <h2>Moments from GOSH CAFE</h2>
+          <p>Take a tour through our café setting, signature dishes, and cozy seating designed for start-to-finish comfort.</p>
+        </div>
+      </section>
+
+      <div className="gallery-grid">
         {images.map((img, idx) => (
-          <div
-            key={img}
-            style={{
-              width: 240,
-              cursor: 'pointer',
-              transition: 'transform 0.2s ease',
-              position: 'relative'
-            }}
-            onClick={() => openLightbox(idx)}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-          >
-            <img
-              src={`/api/images/${encodeURIComponent(img)}`}
-              alt={img}
-              style={{ width: '100%', borderRadius: 6, display: 'block' }}
-            />
-            <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{img}</div>
-            <div style={{
-              position: 'absolute',
-              inset: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'rgba(0, 0, 0, 0)',
-              borderRadius: 6,
-              transition: 'backgroundColor 0.2s ease',
-              pointerEvents: 'none'
-            }} className="gallery-hover">
-              <span style={{ color: 'white', fontSize: 14, fontWeight: 'bold', opacity: 0 }} className="zoom-icon">🔍 View</span>
-            </div>
+          <div key={img} className="gallery-card" onClick={() => openLightbox(idx)}>
+            <img src={`/api/images/${encodeURIComponent(img)}`} alt={img} />
+            <div className="gallery-card-label">{img.replace(/[-_]/g, ' ').replace(/\.(jpg|jpeg|png|webp|avif)$/i, '')}</div>
           </div>
         ))}
         {images.length === 0 && <div>No images found.</div>}

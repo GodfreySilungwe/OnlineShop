@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { Routes, Route, Link, useNavigate } from 'react-router-dom'
+import { Routes, Route, NavLink, useNavigate } from 'react-router-dom'
 import Menu from './components/Menu'
+import Home from './components/Home'
 import ItemDetail from './components/ItemDetail'
 import Cart from './components/Cart'
 import About from './components/About'
@@ -38,36 +39,40 @@ function HeaderBar({ searchQuery, onSearchChange }) {
 
   return (
     <header className="app-header">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1 }}>
-        <nav style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <Link to="/">Home</Link>
-          <Link to="/cart">Cart{total > 0 && <span style={badgeStyle}>{total}</span>}</Link>
-          <Link to="/about">About</Link>
-          <Link to="/reserve">Reserve</Link>
-          <Link to="/admin">Admin</Link>
-          <Link to="/gallery">Gallery</Link>
+      <div className="header-left">
+        <nav className="nav-links">
+          <NavLink to="/" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Home</NavLink>
+          <NavLink to="/cart" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+            Cart{total > 0 && <span style={badgeStyle}>{total}</span>}
+          </NavLink>
+          <NavLink to="/reserve" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Reservation</NavLink>
+          <NavLink to="/gallery" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Gallery</NavLink>
+          <NavLink to="/about" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>About Us</NavLink>
         </nav>
-        <div className="header-splash" aria-hidden>
-          <div className="header-brand">Café Fausse</div>
-        </div>
+      </div>
+
+      <div className="header-center">
+        <div className="header-brand">GOSH CAFE</div>
+      </div>
+
+      <div className="header-right">
         <input
           type="text"
           placeholder="Search items..."
           value={searchQuery}
           onChange={handleSearchChange}
           style={{
-            padding: '8px 12px',
+            padding: '10px 14px',
             fontSize: 14,
-            border: '1px solid #ddd',
-            borderRadius: 6,
-            marginLeft: 'auto',
-            width: 250,
-            maxWidth: '100%'
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: 999,
+            width: 260,
+            maxWidth: '100%',
+            background: 'rgba(255,255,255,0.14)',
+            color: 'white'
           }}
         />
-        <div style={{ marginLeft: 12 }}>
-          <NewsletterSignup />
-        </div>
+        <NavLink to="/admin" className={({ isActive }) => `nav-link admin-link${isActive ? ' active' : ''}`}>Admin</NavLink>
       </div>
     </header>
   )
@@ -94,8 +99,8 @@ function App() {
 
       <main className="app-main">
         <Routes>
+          <Route path="/" element={<Home />} />
           <Route path="/menu" element={<Menu categories={categories} searchQuery={searchQuery} onSearchChange={setSearchQuery} />} />
-          <Route path="/" element={<Menu categories={categories} searchQuery={searchQuery} onSearchChange={setSearchQuery} />} />
           <Route path="/about" element={<About />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/reserve" element={<Reservation />} />

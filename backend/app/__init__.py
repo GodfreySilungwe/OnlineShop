@@ -1,6 +1,7 @@
 import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -15,6 +16,9 @@ def create_app():
     app.config['JSON_SORT_KEYS'] = False
 
     db.init_app(app)
+    
+    # Enable CORS for all routes
+    CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174", "http://localhost:5175", "http://127.0.0.1:5175"]}})
 
     # register blueprintss
     from .api import api_bp

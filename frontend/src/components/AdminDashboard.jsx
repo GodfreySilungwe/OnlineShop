@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { formatMWK } from '../utils/currency'
 
 function useAdminFetch(path, adminSecret) {
   return fetch(path, { headers: { 'X-Admin-Secret': adminSecret } }).then(async (r) => {
@@ -241,15 +242,6 @@ export default function AdminDashboard() {
     }
   }
 
-  function notifyPromotionsUpdated() {
-    try {
-      window.dispatchEvent(new CustomEvent('promotions-updated'))
-      localStorage.setItem('promotions_updated_at', String(Date.now()))
-    } catch (e) {
-      // ignore
-    }
-  }
-
   async function togglePromoActive(promo) {
     try {
       await fetchAdmin(`/api/admin/promotions/${promo.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !promo.active }) })
@@ -304,296 +296,740 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div>
-      <h2>Admin Dashboard</h2>
-      {!adminSecret && (
-        <div>
-          <p>This area is protected by a simple dev secret.</p>
-          <button onClick={promptForSecret}>Enter admin secret</button>
+    <div style={{ background: 'linear-gradient(135deg, #faf9f8 0%, #f5f1ed 100%)', minHeight: '100vh', paddingBottom: 60 }}>
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '40px 28px' }}>
+        {/* Header */}
+        <div style={{ marginBottom: 40 }}>
+          <h1 style={{ margin: 0, fontSize: '2.8rem', fontWeight: 900, color: '#0f172a' }}>Admin Dashboard</h1>
+          <p style={{ margin: '8px 0 0', color: '#64748b', fontSize: '1.05rem' }}>Manage orders, menu, promotions, and analytics</p>
         </div>
-      )}
 
-      {adminSecret && (
-        <div>
-          <div style={{ marginBottom: 12 }}>
-            <button onClick={() => setTab('orders')} disabled={tab === 'orders'}>Orders</button>
-            <button onClick={() => setTab('categories')} disabled={tab === 'categories'} style={{ marginLeft: 8 }}>Categories</button>
-            <button onClick={() => setTab('menu')} disabled={tab === 'menu'} style={{ marginLeft: 8 }}>Menu Items</button>
-            <button onClick={() => setTab('promotions')} disabled={tab === 'promotions'} style={{ marginLeft: 8 }}>Promotions</button>
-            <button onClick={() => setTab('reservations')} disabled={tab === 'reservations'} style={{ marginLeft: 8 }}>Reservations</button>
+        {!adminSecret && (
+          <div style={{
+            background: 'white',
+            padding: '3rem 2rem',
+            borderRadius: '20px',
+            boxShadow: '0 12px 40px rgba(15,23,42,0.06)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔐</div>
+            <p style={{ fontSize: '1.1rem', color: '#475569', marginBottom: '2rem' }}>This area is protected. Please enter the admin secret to continue.</p>
+            <button onClick={promptForSecret} style={{
+              padding: '1rem 2rem',
+              background: 'linear-gradient(135deg, #d4a373 0%, #c9934d 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '999px',
+              fontSize: '1rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 12px 30px rgba(212,163,115,0.3)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.transform = 'translateY(-2px)'
+              e.target.style.boxShadow = '0 16px 40px rgba(212,163,115,0.4)'
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.transform = 'translateY(0)'
+              e.target.style.boxShadow = '0 12px 30px rgba(212,163,115,0.3)'
+            }}>
+              Enter Admin Secret
+            </button>
           </div>
+        )}
 
-          {error && <div style={{ color: 'red' }}>{error}</div>}
+        {adminSecret && (
+          <div>
+            {/* Tab Navigation */}
+            <div style={{
+              display: 'flex',
+              gap: '8px',
+              marginBottom: '32px',
+              overflowX: 'auto',
+              paddingBottom: '12px',
+              borderBottom: '2px solid rgba(212,163,115,0.1)'
+            }}>
+              {['reports', 'orders', 'categories', 'menu', 'promotions', 'reservations'].map((tabName) => (
+                <button
+                  key={tabName}
+                  onClick={() => setTab(tabName)}
+                  style={{
+                    padding: '10px 20px',
+                    border: 'none',
+                    background: tab === tabName ? 'linear-gradient(135deg, #d4a373 0%, #c9934d 100%)' : 'rgba(212,163,115,0.1)',
+                    color: tab === tabName ? 'white' : '#2c1810',
+                    borderRadius: '999px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    textTransform: 'capitalize',
+                    fontSize: '0.95rem',
+                    whiteSpace: 'nowrap'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (tab !== tabName) {
+                      e.target.style.background = 'rgba(212,163,115,0.2)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (tab !== tabName) {
+                      e.target.style.background = 'rgba(212,163,115,0.1)'
+                    }
+                  }}>
+                  {tabName === 'reports' && '📊'} {tabName === 'orders' && '📦'} {tabName === 'categories' && '📂'} {tabName === 'menu' && '🍽️'} {tabName === 'promotions' && '🎉'} {tabName === 'reservations' && '📅'} {tabName.charAt(0).toUpperCase() + tabName.slice(1)}
+                </button>
+              ))}
+            </div>
 
-          {tab === 'orders' && (
-            <div>
-              <h3>Recent Orders</h3>
-              {orders.length === 0 && <p>No orders</p>}
-              <ul>
-                {orders.map((o) => (
-                  <li key={o.id} style={{ marginBottom: 8 }}>
-                      <strong>#{o.id}</strong> — {o.customer_name} — {o.customer_phone} — {(o.total_cents/100).toFixed(2)} — {o.status}
+            {/* Error Message */}
+            {error && (
+              <div style={{
+                background: '#fee2e2',
+                border: '1px solid #fecaca',
+                color: '#991b1b',
+                padding: '1rem',
+                borderRadius: '12px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                <span>{error}</span>
+              </div>
+            )}
+
+            {/* Reports Tab */}
+            {tab === 'reports' && (
+              <div>
+                {(() => {
+                  const stats = {
+                    totalOrders: orders.length,
+                    totalRevenue: orders.reduce((sum, o) => sum + (o.total_cents || 0), 0),
+                    avgOrderValue: orders.length > 0 ? Math.round(orders.reduce((sum, o) => sum + (o.total_cents || 0), 0) / orders.length) : 0,
+                    totalReservations: reservations.length
+                  }
+                  
+                  const topItems = (() => {
+                    const itemCounts = {}
+                    orders.forEach(o => {
+                      o.items.forEach(it => {
+                        itemCounts[it.menu_item_id] = (itemCounts[it.menu_item_id] || 0) + it.qty
+                      })
+                    })
+                    return Object.entries(itemCounts)
+                      .map(([id, qty]) => ({ id: parseInt(id), qty, name: menuItems.find(m => m.id === parseInt(id))?.name || 'Unknown' }))
+                      .sort((a, b) => b.qty - a.qty)
+                      .slice(0, 5)
+                  })()
+
+                  const revenuByCategory = (() => {
+                    const catRevenue = {}
+                    orders.forEach(o => {
+                      o.items.forEach(it => {
+                        const item = menuItems.find(m => m.id === it.menu_item_id)
+                        const catName = item ? 'Category ' + item.category_id : 'Unknown'
+                        const revenue = (it.unit_price_cents || 0) * it.qty
+                        catRevenue[catName] = (catRevenue[catName] || 0) + revenue
+                      })
+                    })
+                    return Object.entries(catRevenue).map(([cat, rev]) => ({ category: cat, revenue: rev }))
+                  })()
+
+                  const ordersByStatus = (() => {
+                    const statusCount = {}
+                    orders.forEach(o => {
+                      statusCount[o.status] = (statusCount[o.status] || 0) + 1
+                    })
+                    return statusCount
+                  })()
+
+                  return (
                     <div>
-                      {o.items.map((it, idx) => (
-                        <div key={idx}>item {it.menu_item_id} x {it.qty} @ {(it.unit_price_cents/100).toFixed(2)}</div>
+                      {/* KPI Cards */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                        gap: '20px',
+                        marginBottom: '40px'
+                      }}>
+                        {[
+                          { label: 'Total Revenue', value: `MK ${(stats.totalRevenue / 100).toLocaleString('en', { maximumFractionDigits: 2 })}`, icon: '💰', color: '#10b981' },
+                          { label: 'Total Orders', value: stats.totalOrders, icon: '📦', color: '#3b82f6' },
+                          { label: 'Avg Order Value', value: `MK ${(stats.avgOrderValue / 100).toLocaleString('en', { maximumFractionDigits: 2 })}`, icon: '📊', color: '#f59e0b' },
+                          { label: 'Reservations', value: stats.totalReservations, icon: '📅', color: '#8b5cf6' }
+                        ].map((stat, idx) => (
+                          <div key={idx} style={{
+                            background: 'white',
+                            padding: '24px',
+                            borderRadius: '16px',
+                            boxShadow: '0 4px 12px rgba(15,23,42,0.06)',
+                            borderLeft: `4px solid ${stat.color}`,
+                            transition: 'all 0.3s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-4px)'
+                            e.currentTarget.style.boxShadow = '0 12px 30px rgba(15,23,42,0.12)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)'
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(15,23,42,0.06)'
+                          }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                              <span style={{ color: '#64748b', fontSize: '0.9rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</span>
+                              <span style={{ fontSize: '2rem' }}>{stat.icon}</span>
+                            </div>
+                            <div style={{ fontSize: '2rem', fontWeight: 900, color: '#0f172a' }}>{stat.value}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Charts Section */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '24px', marginBottom: '40px' }}>
+                        {/* Top Items */}
+                        <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
+                          <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>🏆 Top 5 Items</h3>
+                          {topItems.length === 0 ? (
+                            <p style={{ color: '#64748b' }}>No sales data yet</p>
+                          ) : (
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                              {topItems.map((item, idx) => (
+                                <div key={idx} style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  padding: '12px',
+                                  background: 'linear-gradient(90deg, rgba(212,163,115,0.1) 0%, transparent 100%)',
+                                  borderRadius: '8px'
+                                }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                    <span style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      width: '32px',
+                                      height: '32px',
+                                      background: 'linear-gradient(135deg, #d4a373 0%, #c9934d 100%)',
+                                      color: 'white',
+                                      borderRadius: '50%',
+                                      fontWeight: 700,
+                                      fontSize: '0.85rem'
+                                    }}>{idx + 1}</span>
+                                    <div>
+                                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.name}</div>
+                                      <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{item.qty} sold</div>
+                                    </div>
+                                  </div>
+                                  <div style={{ fontSize: '1.2rem', fontWeight: 700, color: '#10b981' }}>#{item.qty}</div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Order Status Breakdown */}
+                        <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
+                          <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>📊 Order Status</h3>
+                          {Object.keys(ordersByStatus).length === 0 ? (
+                            <p style={{ color: '#64748b' }}>No orders</p>
+                          ) : (
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                              {Object.entries(ordersByStatus).map(([status, count]) => (
+                                <div key={status} style={{
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                  padding: '12px',
+                                  background: 'linear-gradient(90deg, rgba(59,130,246,0.1) 0%, transparent 100%)',
+                                  borderRadius: '8px'
+                                }}>
+                                  <span style={{ fontWeight: 600, color: '#0f172a', textTransform: 'capitalize' }}>{status}</span>
+                                  <span style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    minWidth: '40px',
+                                    height: '40px',
+                                    background: '#3b82f6',
+                                    color: 'white',
+                                    borderRadius: '8px',
+                                    fontWeight: 700
+                                  }}>{count}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Revenue by Category */}
+                      {revenuByCategory.length > 0 && (
+                        <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
+                          <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>📈 Revenue by Category</h3>
+                          <div style={{ display: 'grid', gap: '12px' }}>
+                            {revenuByCategory.sort((a, b) => b.revenue - a.revenue).map((item, idx) => {
+                              const maxRevenue = Math.max(...revenuByCategory.map(x => x.revenue))
+                              const percentage = (item.revenue / maxRevenue) * 100
+                              return (
+                                <div key={idx}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                    <span style={{ fontWeight: 600, color: '#0f172a' }}>{item.category}</span>
+                                    <span style={{ fontWeight: 700, color: '#10b981' }}>MK {(item.revenue / 100).toLocaleString('en', { maximumFractionDigits: 2 })}</span>
+                                  </div>
+                                  <div style={{
+                                    height: '8px',
+                                    background: 'rgba(212,163,115,0.2)',
+                                    borderRadius: '4px',
+                                    overflow: 'hidden'
+                                  }}>
+                                    <div style={{
+                                      height: '100%',
+                                      background: 'linear-gradient(90deg, #d4a373 0%, #c9934d 100%)',
+                                      width: percentage + '%',
+                                      transition: 'width 0.5s ease'
+                                    }} />
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
+
+            {/* Orders Tab */}
+            {tab === 'orders' && (
+              <div>
+                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
+                  <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>📦 Recent Orders</h3>
+                  {orders.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>No orders yet</p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.95rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid rgba(212,163,115,0.1)' }}>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Order ID</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Customer</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Phone</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Total</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {orders.map((o) => (
+                            <tr key={o.id} style={{ borderBottom: '1px solid rgba(212,163,115,0.05)', transition: 'background 0.2s ease' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212,163,115,0.05)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                              <td style={{ padding: '12px', fontWeight: 700, color: '#d4a373' }}>#{o.id}</td>
+                              <td style={{ padding: '12px', color: '#0f172a' }}>{o.customer_name}</td>
+                              <td style={{ padding: '12px', color: '#64748b' }}>{o.customer_phone || '-'}</td>
+                              <td style={{ padding: '12px', fontWeight: 700, color: '#10b981' }}>{formatMWK(o.total_cents)}</td>
+                              <td style={{ padding: '12px' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '4px 12px',
+                                  borderRadius: '999px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 700,
+                                  background: o.status === 'pending' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                                  color: o.status === 'pending' ? '#f59e0b' : '#10b981'
+                                }}>
+                                  {o.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Reservations Tab */}
+            {tab === 'reservations' && (
+              <div>
+                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
+                  <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>📅 Reservations</h3>
+                  {reservations.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>No reservations found</p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid rgba(212,163,115,0.1)' }}>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>ID</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Customer</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Time</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Guests</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Created</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reservations.map((r) => (
+                            <tr key={r.id} style={{ borderBottom: '1px solid rgba(212,163,115,0.05)', transition: 'background 0.2s ease' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212,163,115,0.05)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                              <td style={{ padding: '12px', fontWeight: 700, color: '#d4a373' }}>#{r.id}</td>
+                              <td style={{ padding: '12px' }}>
+                                <div style={{ fontWeight: 600, color: '#0f172a' }}>{r.customer?.name}</div>
+                                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{r.customer?.email}</div>
+                              </td>
+                              <td style={{ padding: '12px', color: '#0f172a' }}>{new Date(r.time_slot).toLocaleString()}</td>
+                              <td style={{ padding: '12px', color: '#0f172a', fontWeight: 600 }}>{r.guests}</td>
+                              <td style={{ padding: '12px', color: '#64748b', fontSize: '0.85rem' }}>{new Date(r.created_at).toLocaleDateString()}</td>
+                              <td style={{ padding: '12px' }}>
+                                <button onClick={async () => {
+                                  if (!window.confirm('Cancel this reservation?')) return
+                                  try {
+                                    await fetchAdmin(`/api/admin/reservations/${r.id}`, { method: 'DELETE' })
+                                    setReservations((prev) => prev.filter((x) => x.id !== r.id))
+                                  } catch (e) { setError(String(e)) }
+                                }} style={{
+                                  padding: '6px 12px',
+                                  background: '#fee2e2',
+                                  color: '#991b1b',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.85rem',
+                                  fontWeight: 600,
+                                  transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.target.style.background = '#fecaca'
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.target.style.background = '#fee2e2'
+                                }}>
+                                  Cancel
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Categories Tab */}
+            {tab === 'categories' && (
+              <div>
+                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)', marginBottom: '24px' }}>
+                  <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>📂 Categories</h3>
+                  {categories.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>No categories found</p>
+                  ) : (
+                    <div style={{ display: 'grid', gap: '12px' }}>
+                      {categories.map((c) => (
+                        <div key={c.id} style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          padding: '16px',
+                          background: 'linear-gradient(90deg, rgba(212,163,115,0.08) 0%, transparent 100%)',
+                          borderRadius: '12px',
+                          border: '1px solid rgba(212,163,115,0.1)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'linear-gradient(90deg, rgba(212,163,115,0.15) 0%, transparent 100%)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'linear-gradient(90deg, rgba(212,163,115,0.08) 0%, transparent 100%)'}>
+                          <div>
+                            <div style={{ fontWeight: 700, color: '#0f172a' }}>{c.name}</div>
+                            <div style={{ fontSize: '0.85rem', color: '#64748b', marginTop: '4px' }}>Position: {c.position}</div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button onClick={() => setEditingCategory(c)} style={{
+                              padding: '6px 12px',
+                              background: 'rgba(59,130,246,0.1)',
+                              color: '#3b82f6',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '0.85rem',
+                              fontWeight: 600
+                            }}>Edit</button>
+                            <button onClick={() => deleteCategory(c)} style={{
+                              padding: '6px 12px',
+                              background: '#fee2e2',
+                              color: '#991b1b',
+                              border: 'none',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '0.85rem',
+                              fontWeight: 600
+                            }}>Delete</button>
+                          </div>
+                        </div>
                       ))}
                     </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {tab === 'reservations' && (
-            <div>
-              <h3>Reservations</h3>
-              {reservations.length === 0 && <p>No reservations found</p>}
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Customer</th>
-                    <th>Time</th>
-                    <th>Table</th>
-                    <th>Guests</th>
-                    <th>Created</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reservations.map((r) => (
-                    <tr key={r.id}>
-                      <td>{r.id}</td>
-                      <td>
-                        {r.customer?.name}
-                        <br />
-                        <small>{r.customer?.email}</small>
-                        {r.customer?.phone && (
-                          <div style={{ marginTop: 6 }}><small>📞 {r.customer.phone}</small></div>
-                        )}
-                      </td>
-                      <td>{new Date(r.time_slot).toLocaleString()}</td>
-                      <td>{r.table_number}</td>
-                      <td>{r.guests}</td>
-                      <td>{new Date(r.created_at).toLocaleString()}</td>
-                      <td style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={async () => {
-                          if (!window.confirm('Cancel this reservation?')) return
-                          try {
-                            await fetchAdmin(`/api/admin/reservations/${r.id}`, { method: 'DELETE' })
-                            setReservations((prev) => prev.filter((x) => x.id !== r.id))
-                          } catch (e) { setError(String(e)) }
-                        }} style={{ background: '#d9534f', color: 'white' }}>Cancel</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {tab === 'categories' && (
-            <div>
-              <h3>Categories</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Position</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {categories.map((c) => (
-                    <tr key={c.id}>
-                      <td>
-                        {editingCategory?.id === c.id ? (
-                          <input
-                            type="text"
-                            defaultValue={c.name}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') updateCategory(c, { name: e.target.value })
-                            }}
-                          />
-                        ) : (
-                          c.name
-                        )}
-                      </td>
-                      <td>{c.position}</td>
-                      <td style={{ display: 'flex', gap: 8 }}>
-                        {editingCategory?.id === c.id ? (
-                          <>
-                            <button onClick={() => updateCategory(c, { name: editingCategory.name })}>Save</button>
-                            <button onClick={() => setEditingCategory(null)}>Cancel</button>
-                          </>
-                        ) : (
-                          <>
-                            <button onClick={() => setEditingCategory(c)}>Edit</button>
-                            <button onClick={() => deleteCategory(c)} style={{ background: '#d9534f', color: 'white' }}>Delete</button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              <h4 style={{ marginTop: 12 }}>Create new category</h4>
-              <form onSubmit={createCategory}>
-                <div>
-                  <input name="cat_name" placeholder="Category name" required />
+                  )}
                 </div>
-                <div>
-                  <input name="cat_position" type="number" placeholder="Position (default 0)" defaultValue={0} />
+
+                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>➕ Create New Category</h4>
+                  <form onSubmit={createCategory} style={{ display: 'grid', gap: '16px' }}>
+                    <input name="cat_name" placeholder="Category name" required style={{
+                      padding: '10px 12px',
+                      border: '1px solid rgba(212,163,115,0.2)',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem',
+                      transition: 'border-color 0.2s ease'
+                    }} />
+                    <input name="cat_position" type="number" placeholder="Position (default 0)" defaultValue={0} style={{
+                      padding: '10px 12px',
+                      border: '1px solid rgba(212,163,115,0.2)',
+                      borderRadius: '8px',
+                      fontSize: '0.95rem'
+                    }} />
+                    <button type="submit" style={{
+                      padding: '10px 16px',
+                      background: 'linear-gradient(135deg, #d4a373 0%, #c9934d 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => e.target.style.transform = 'translateY(-1px)'}
+                    onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}>
+                      Create Category
+                    </button>
+                  </form>
                 </div>
-                <div style={{ marginTop: 8 }}>
-                  <button type="submit">Create</button>
-                </div>
-              </form>
-            </div>
-          )}
+              </div>
+            )}
 
           
 
-          {tab === 'menu' && (
-            <div>
-              <h3>Menu Items</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Price</th>
-                    <th>Available</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {menuItems.map((m) => (
-                    editingItem?.id === m.id ? (
-                      <tr key={m.id}>
-                        <td><input type="text" defaultValue={m.name} placeholder="Name" /></td>
-                        <td><input type="number" defaultValue={(m.price_cents/100).toFixed(2)} placeholder="Price" step="0.01" /></td>
-                        <td><input type="checkbox" defaultChecked={m.available} /></td>
-                        <td style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                          <input type="file" accept="image/*" />
-                          <button onClick={(e) => {
-                            const row = e.target.closest('tr')
-                            const name = row.querySelector('input[type="text"]').value
-                            const priceVal = row.querySelector('input[type="number"]').value
-                            const available = row.querySelector('input[type="checkbox"]').checked
-                            const fileInput = row.querySelector('input[type="file"]')
-                            const file = fileInput && fileInput.files && fileInput.files[0] ? fileInput.files[0] : null
-                            const updates = {
-                              name,
-                              price_cents: Math.round(parseFloat(priceVal) * 100),
-                              available,
-                            }
-                            if (file) updates.imageFile = file
-                            updateItem(m, updates)
-                          }}>Save</button>
-                          <button onClick={() => setEditingItem(null)}>Cancel</button>
-                        </td>
-                      </tr>
-                    ) : (
-                      <tr key={m.id}>
-                        <td>{m.name}</td>
-                        <td>{(m.price_cents/100).toFixed(2)}</td>
-                        <td>{m.available ? 'yes' : 'no'}</td>
-                        <td style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={() => toggleAvailable(m)}>{m.available ? 'Disable' : 'Enable'}</button>
-                          <button onClick={() => setEditingItem(m)}>Edit</button>
-                          <button onClick={() => deleteItem(m)} style={{ background: '#d9534f', color: 'white' }}>Delete</button>
-                        </td>
-                      </tr>
-                    )
-                  ))}
-                </tbody>
-              </table>
+            {/* Menu Tab */}
+            {tab === 'menu' && (
+              <div>
+                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)', marginBottom: '24px', overflowX: 'auto' }}>
+                  <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>🍽️ Menu Items</h3>
+                  {menuItems.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>No menu items found</p>
+                  ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid rgba(212,163,115,0.1)' }}>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Name</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Price</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Available</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {menuItems.map((m) => (
+                          <tr key={m.id} style={{ borderBottom: '1px solid rgba(212,163,115,0.05)' }}>
+                            <td style={{ padding: '12px', fontWeight: 600, color: '#0f172a' }}>{m.name}</td>
+                            <td style={{ padding: '12px', color: '#10b981', fontWeight: 700 }}>{formatMWK(m.price_cents)}</td>
+                            <td style={{ padding: '12px' }}>
+                              <span style={{
+                                display: 'inline-block',
+                                padding: '4px 12px',
+                                borderRadius: '999px',
+                                fontSize: '0.8rem',
+                                fontWeight: 700,
+                                background: m.available ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.2)',
+                                color: m.available ? '#10b981' : '#6b7280'
+                              }}>
+                                {m.available ? 'Yes' : 'No'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px', display: 'flex', gap: '8px' }}>
+                              <button onClick={() => toggleAvailable(m)} style={{
+                                padding: '4px 10px',
+                                background: 'rgba(212,163,115,0.1)',
+                                color: '#d4a373',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                fontWeight: 600
+                              }}>{m.available ? 'Disable' : 'Enable'}</button>
+                              <button onClick={() => setEditingItem(m)} style={{
+                                padding: '4px 10px',
+                                background: 'rgba(59,130,246,0.1)',
+                                color: '#3b82f6',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                fontWeight: 600
+                              }}>Edit</button>
+                              <button onClick={() => deleteItem(m)} style={{
+                                padding: '4px 10px',
+                                background: '#fee2e2',
+                                color: '#991b1b',
+                                border: 'none',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                fontWeight: 600
+                              }}>Delete</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
 
-              <h4 style={{ marginTop: 12 }}>Create new item</h4>
-              <form onSubmit={createItem}>
-                <div>
-                  <input name="name" placeholder="Name" />
+                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>➕ Create New Item</h4>
+                  <form onSubmit={createItem} style={{ display: 'grid', gap: '16px' }}>
+                    <input name="name" placeholder="Item name" style={{ padding: '10px 12px', border: '1px solid rgba(212,163,115,0.2)', borderRadius: '8px' }} />
+                    <input name="price" placeholder="Price in MWK" style={{ padding: '10px 12px', border: '1px solid rgba(212,163,115,0.2)', borderRadius: '8px' }} />
+                    <select name="category_id" style={{ padding: '10px 12px', border: '1px solid rgba(212,163,115,0.2)', borderRadius: '8px' }}>
+                      <option value="">-- select category --</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                    <input name="description" placeholder="Description" style={{ padding: '10px 12px', border: '1px solid rgba(212,163,115,0.2)', borderRadius: '8px' }} />
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#0f172a' }}>Image</label>
+                      <input type="file" name="image" accept="image/*" style={{ padding: '10px 12px', border: '1px solid rgba(212,163,115,0.2)', borderRadius: '8px', width: '100%' }} />
+                    </div>
+                    <button type="submit" style={{
+                      padding: '10px 16px',
+                      background: 'linear-gradient(135deg, #d4a373 0%, #c9934d 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}>
+                      Create Item
+                    </button>
+                  </form>
                 </div>
-                <div>
-                  <input name="price" placeholder="Price (e.g. 3.50)" />
-                </div>
-                <div>
-                  <select name="category_id">
-                    <option value="">-- select category --</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <input name="description" placeholder="Description" />
-                </div>
-                <div>
-                  <label>Image</label>
-                  <input type="file" name="image" accept="image/*" />
-                </div>
-                <div style={{ marginTop: 8 }}>
-                  <button type="submit">Create</button>
-                </div>
-              </form>
-            </div>
-          )}
+              </div>
+            )}
 
-          {tab === 'promotions' && (
-            <div>
-              <h3>Promotions</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th>Item</th>
-                    <th>Discount %</th>
-                    <th>Active</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {promotions.map((p) => {
-                    const item = menuItems.find((m) => m.id === p.menu_item_id)
-                    const itemName = item ? item.name : `item ${p.menu_item_id}`
-                    return (
-                      <tr key={p.id}>
-                        <td>{itemName}</td>
-                        <td>{p.percent}%</td>
-                        <td>{p.active ? 'yes' : 'no'}</td>
-                        <td style={{ display: 'flex', gap: 8 }}>
-                          <button onClick={() => togglePromoActive(p)}>{p.active ? 'Disable' : 'Enable'}</button>
-                          <button onClick={() => updatePromoPercent(p)}>Edit %</button>
-                          <button onClick={() => deletePromo(p)} style={{ background: '#d9534f', color: 'white' }}>Delete</button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            {/* Promotions Tab */}
+            {tab === 'promotions' && (
+              <div>
+                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)', marginBottom: '24px', overflowX: 'auto' }}>
+                  <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>🎉 Promotions</h3>
+                  {promotions.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>No promotions found</p>
+                  ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid rgba(212,163,115,0.1)' }}>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Item</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Discount</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Active</th>
+                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {promotions.map((p) => {
+                          const item = menuItems.find((m) => m.id === p.menu_item_id)
+                          const itemName = item ? item.name : `item ${p.menu_item_id}`
+                          return (
+                            <tr key={p.id} style={{ borderBottom: '1px solid rgba(212,163,115,0.05)' }}>
+                              <td style={{ padding: '12px', fontWeight: 600, color: '#0f172a' }}>{itemName}</td>
+                              <td style={{ padding: '12px', color: '#ff6b6b', fontWeight: 700 }}>{p.percent}% OFF</td>
+                              <td style={{ padding: '12px' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '4px 12px',
+                                  borderRadius: '999px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 700,
+                                  background: p.active ? 'rgba(16, 185, 129, 0.2)' : 'rgba(107, 114, 128, 0.2)',
+                                  color: p.active ? '#10b981' : '#6b7280'
+                                }}>
+                                  {p.active ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px', display: 'flex', gap: '8px' }}>
+                                <button onClick={() => togglePromoActive(p)} style={{
+                                  padding: '4px 10px',
+                                  background: 'rgba(212,163,115,0.1)',
+                                  color: '#d4a373',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 600
+                                }}>{p.active ? 'Disable' : 'Enable'}</button>
+                                <button onClick={() => updatePromoPercent(p)} style={{
+                                  padding: '4px 10px',
+                                  background: 'rgba(59,130,246,0.1)',
+                                  color: '#3b82f6',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 600
+                                }}>Edit %</button>
+                                <button onClick={() => deletePromo(p)} style={{
+                                  padding: '4px 10px',
+                                  background: '#fee2e2',
+                                  color: '#991b1b',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 600
+                                }}>Delete</button>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
 
-              <h4 style={{ marginTop: 12 }}>Create promotion for item</h4>
-              <form onSubmit={createPromo}>
-                <div>
-                  <select name="menu_item_id" required>
-                    <option value="">-- select item --</option>
-                    {menuItems.map((m) => (
-                      <option key={m.id} value={m.id}>{m.name} — ${(m.price_cents / 100).toFixed(2)}</option>
-                    ))}
-                  </select>
+                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
+                  <h4 style={{ margin: '0 0 16px', fontSize: '1.1rem', fontWeight: 700, color: '#0f172a' }}>➕ Create New Promotion</h4>
+                  <form onSubmit={createPromo} style={{ display: 'grid', gap: '16px' }}>
+                    <select name="menu_item_id" required style={{ padding: '10px 12px', border: '1px solid rgba(212,163,115,0.2)', borderRadius: '8px' }}>
+                      <option value="">-- select item --</option>
+                      {menuItems.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name} — {formatMWK(m.price_cents)}</option>
+                      ))}
+                    </select>
+                    <input name="percent" type="number" min="0" max="100" placeholder="Discount %" required style={{ padding: '10px 12px', border: '1px solid rgba(212,163,115,0.2)', borderRadius: '8px' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input type="checkbox" name="active" id="promo-active" defaultChecked style={{ width: '18px', height: '18px', cursor: 'pointer' }} />
+                      <label htmlFor="promo-active" style={{ cursor: 'pointer', fontWeight: 500, color: '#0f172a' }}>Active</label>
+                    </div>
+                    <button type="submit" style={{
+                      padding: '10px 16px',
+                      background: 'linear-gradient(135deg, #d4a373 0%, #c9934d 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}>
+                      Create Promotion
+                    </button>
+                  </form>
                 </div>
-                <div>
-                  <input name="percent" type="number" min="0" max="100" placeholder="Discount %" required />
-                </div>
-                <div><label><input name="active" type="checkbox" defaultChecked /> Active</label></div>
-                <div style={{ marginTop: 8 }}>
-                  <button type="submit">Create</button>
-                </div>
-              </form>
-            </div>
-          )}
-        </div>
-      )}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

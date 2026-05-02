@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
+import { formatMWK } from '../utils/currency'
 
 const CartContext = createContext()
 
@@ -28,12 +29,47 @@ export function CartProvider({ children }) {
     })
   }
 
+  function removeFromCart(itemId) {
+    setItems((prev) => prev.filter((item) => item.id !== itemId))
+  }
+
+  function updateQuantity(itemId, newQty) {
+    if (newQty <= 0) {
+      removeFromCart(itemId)
+      return
+    }
+    setItems((prev) => prev.map((item) => 
+      item.id === itemId ? { ...item, qty: newQty } : item
+    ))
+  }
+
+  function getCartTotal() {
+    return items.reduce((total, item) => total + (item.price_cents * item.qty), 0)
+  }
+
+  function getCartTotalFormatted() {
+    return formatMWK(getCartTotal())
+  }
+
+  function getItemCount() {
+    return items.reduce((count, item) => count + item.qty, 0)
+  }
+
   function clearCart() {
     setItems([])
   }
 
   return (
-    <CartContext.Provider value={{ items, addToCart, clearCart }}>
+    <CartContext.Provider value={{ 
+      items, 
+      addToCart, 
+      removeFromCart,
+      updateQuantity,
+      clearCart,
+      getCartTotal,
+      getCartTotalFormatted,
+      getItemCount
+    }}>
       {children}
     </CartContext.Provider>
   )

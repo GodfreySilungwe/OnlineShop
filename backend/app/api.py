@@ -147,6 +147,8 @@ def stripe_checkout():
             print(f"[INFO] Added item {menu_item.name} (qty: {qty}) to order")
             
             # For Stripe, price is in cents
+            # Note: Stripe doesn't support MWK directly, using USD for test environment
+            # Frontend displays prices in MWK (Malawi Kwacha)
             line_items.append({
                 'price_data': {
                     'currency': 'usd',
