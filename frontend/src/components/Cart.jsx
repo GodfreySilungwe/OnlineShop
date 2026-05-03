@@ -327,7 +327,7 @@ export default function Cart() {
               <h2>Shopping cart</h2>
               <p className="muted-small">{items.length === 0 ? 'Your cart is empty.' : `${items.length} item${items.length === 1 ? '' : 's'} in cart`}</p>
             </div>
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => {
+            <button type="button" className="btn btn-danger btn-sm" onClick={() => {
               if (!items.length) return
               if (window.confirm('Clear cart?')) clearCart()
             }}>
@@ -373,7 +373,7 @@ export default function Cart() {
                         <span>{it.qty}</span>
                         <button type="button" className="qty-btn" onClick={() => updateQuantity(it.id, it.qty + 1, customizations)}>+</button>
                       </div>
-                      <button type="button" className="btn btn-tertiary btn-sm" onClick={() => removeFromCart(it.id, customizations)}>Remove</button>
+                      <button type="button" className="btn btn-danger btn-sm" onClick={() => removeFromCart(it.id, customizations)}>Remove</button>
                     </div>
                   </li>
                 )

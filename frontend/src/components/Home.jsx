@@ -170,7 +170,10 @@ function Home() {
                   <p>{promo.description || 'A premium selection from our menu, crafted to taste exceptional.'}</p>
                   <div className="promo-footer">
                     <span className="promo-price">{price}</span>
-                    <button type="button" className="promo-action" onClick={(e) => handleAddToCart(promo, 1, e)}>Order now</button>
+                    <div className="promo-actions">
+                      <button type="button" className="promo-action" onClick={(e) => handleAddToCart(promo, 1, e)}>Order now</button>
+                      <Link to={`/item/${promo.id}`} className="btn btn-tertiary">Customize</Link>
+                    </div>
                   </div>
                 </div>
               </article>
@@ -198,7 +201,10 @@ function Home() {
                   <span>{dish.category}</span>
                   <strong>{formatMWK(dish.price_cents || Math.round((dish.price || 0) * 100))}</strong>
                 </div>
-                <button type="button" className="btn btn-tertiary" onClick={(e) => handleAddToCart(dish, 1, e)}>Order</button>
+                <div className="menu-actions">
+                  <button type="button" className="btn btn-primary" onClick={(e) => handleAddToCart(dish, 1, e)}>Order now</button>
+                  <Link to={`/item/${dish.id}`} className="btn btn-tertiary">Customize</Link>
+                </div>
               </div>
             </article>
           ))}
@@ -243,7 +249,7 @@ function Home() {
 
       <footer className="home-footer">
         <div className="footer-grid">
-          <div>
+          <div className="footer-contact">
             <h3>GOSH CAFE</h3>
             <p>Modern Malawian hospitality, elevated for every occasion.</p>
           </div>
@@ -253,13 +259,13 @@ function Home() {
             <p>📞 +265 995 718 815</p>
             <p>✉️ hello@goshcafe.com</p>
           </div>
-          <div>
+          <div className="footer-contact">
             <h4>Opening hours</h4>
             <p>Mon-Thu: 11am - 10pm</p>
             <p>Fri-Sat: 11am - 11pm</p>
             <p>Sun: 12pm - 9pm</p>
           </div>
-          <div>
+          <div className="footer-contact">
             <h4>Follow us</h4>
             <div className="social-icons">
               <a href="#">Instagram</a>

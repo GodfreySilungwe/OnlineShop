@@ -143,7 +143,23 @@ export default function ItemCard({ item }) {
             maxHeight: '80vh',
             overflow: 'auto'
           }} onClick={(e) => e.stopPropagation()}>
-            <h2>{item.name}</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h2 style={{ margin: 0 }}>{item.name}</h2>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--accent-dark)',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Close
+              </button>
+            </div>
             <p>{item.description}</p>
             <p><strong>Price: </strong>{hasDiscount ? `MK${discountedPrice}` : formatMWK(item.price_cents)}</p>
 

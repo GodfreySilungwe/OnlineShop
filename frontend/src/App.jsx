@@ -15,6 +15,7 @@ import { CartProvider, useCart } from './context/CartContext'
 function HeaderBar({ searchQuery, onSearchChange }) {
   const { items } = useCart()
   const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
   const total = items.reduce((s, i) => s + (i.qty || 0), 0)
   const badgeStyle = {
     display: 'inline-block',
@@ -40,14 +41,23 @@ function HeaderBar({ searchQuery, onSearchChange }) {
   return (
     <header className="app-header">
       <div className="header-left">
-        <nav className="nav-links">
-          <NavLink to="/" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Home</NavLink>
-          <NavLink to="/cart" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
+        <button
+          type="button"
+          className="nav-toggle"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen((open) => !open)}
+        >
+          ☰
+        </button>
+        <nav className={`nav-links${menuOpen ? ' open' : ''}`}>
+          <NavLink onClick={() => setMenuOpen(false)} to="/" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Home</NavLink>
+          <NavLink onClick={() => setMenuOpen(false)} to="/menu" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Menu</NavLink>
+          <NavLink onClick={() => setMenuOpen(false)} to="/cart" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Cart{total > 0 && <span style={badgeStyle}>{total}</span>}
           </NavLink>
-          <NavLink to="/reserve" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Reservation</NavLink>
-          <NavLink to="/gallery" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Gallery</NavLink>
-          <NavLink to="/about" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>About Us</NavLink>
+          <NavLink onClick={() => setMenuOpen(false)} to="/reserve" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Reservation</NavLink>
+          <NavLink onClick={() => setMenuOpen(false)} to="/gallery" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Gallery</NavLink>
+          <NavLink onClick={() => setMenuOpen(false)} to="/about" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>About Us</NavLink>
         </nav>
       </div>
 
