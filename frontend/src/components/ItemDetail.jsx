@@ -151,7 +151,7 @@ export default function ItemDetail() {
             fontSize: '16px'
           }}
         >
-          Add to Cart {hasDiscount ? `— MK${discountedPrice}` : ''}
+          Order now {hasDiscount ? `— MK${discountedPrice}` : ''}
         </button>
       </div>
 
