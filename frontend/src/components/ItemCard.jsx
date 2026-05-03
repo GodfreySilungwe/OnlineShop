@@ -115,7 +115,7 @@ export default function ItemCard({ item }) {
               boxShadow: hasDiscount ? '0 4px 12px rgba(255, 107, 107, 0.3)' : 'none'
             }}
           >
-            Customize
+            Preference
           </button>
         </div>
       </div>
@@ -219,7 +219,7 @@ export default function ItemCard({ item }) {
                 fontSize: '16px'
               }}
             >
-              Add to Cart
+              Order now
             </button>
           </div>
         </div>

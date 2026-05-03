@@ -172,7 +172,7 @@ function Home() {
                     <span className="promo-price">{price}</span>
                     <div className="promo-actions">
                       <button type="button" className="promo-action" onClick={(e) => handleAddToCart(promo, 1, e)}>Order now</button>
-                      <Link to={`/item/${promo.id}`} className="btn btn-tertiary">Customize</Link>
+                      <Link to={`/item/${promo.id}`} className="btn btn-tertiary">Preference</Link>
                     </div>
                   </div>
                 </div>
@@ -203,7 +203,7 @@ function Home() {
                 </div>
                 <div className="menu-actions">
                   <button type="button" className="btn btn-primary" onClick={(e) => handleAddToCart(dish, 1, e)}>Order now</button>
-                  <Link to={`/item/${dish.id}`} className="btn btn-tertiary">Customize</Link>
+                  <Link to={`/item/${dish.id}`} className="btn btn-tertiary">Preference</Link>
                 </div>
               </div>
             </article>
