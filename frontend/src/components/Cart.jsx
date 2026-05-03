@@ -2,19 +2,44 @@ import React, { useState } from 'react'
 import { useCart } from '../context/CartContext'
 import { formatMWK } from '../utils/currency'
 
+const PAYMENT_METHODS = {
+  bank_transfer: {
+    name: 'National Bank Transfer',
+    icon: '🏦',
+    details: 'Account Number: 868655',
+    code: '868655'
+  },
+  airtel_money: {
+    name: 'Airtel Money',
+    icon: '📱',
+    details: 'Airtel Money Code: 54367',
+    code: '54367'
+  },
+  mpamba: {
+    name: 'M\'pamba',
+    icon: '💳',
+    details: 'M\'pamba Code: 2675211',
+    code: '2675211'
+  }
+}
+
 export default function Cart() {
   const { items, clearCart, updateQuantity, removeFromCart } = useCart()
   const [loading, setLoading] = useState(false)
+  const [step, setStep] = useState('cart') // 'cart' | 'checkout' | 'payment' | 'success'
   const [orderId, setOrderId] = useState(null)
+  const [totalCents, setTotalCents] = useState(0)
   const [customer, setCustomer] = useState({ customer_name: '', customer_email: '', customer_phone: '' })
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null)
+  const [transactionRef, setTransactionRef] = useState('')
   const [error, setError] = useState(null)
 
-  const totalCents = items.reduce((s, it) => s + (it.price_cents || 0) * (it.qty || 1), 0)
+  const cartTotalCents = items.reduce((s, it) => s + (it.price_cents || 0) * (it.qty || 1), 0)
   const originalTotalCents = items.reduce((s, it) => {
     const orig = it.original_price_cents || it.price_cents || 0
     return s + orig * (it.qty || 1)
   }, 0)
-  const savings = originalTotalCents - totalCents
+  const savings = originalTotalCents - cartTotalCents
 
   async function handleCheckout(e) {
     e.preventDefault()
@@ -29,7 +54,7 @@ export default function Cart() {
     }
 
     const payload = {
-      items: items.map((it) => ({ menu_item_id: it.id, qty: it.qty })),
+      items: items.map((it) => ({ menu_item_id: it.id, qty: it.qty, customizations: it.customizations })),
       ...customer,
     }
     setLoading(true)
@@ -42,11 +67,14 @@ export default function Cart() {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Checkout failed')
-      } else if (data.url) {
-        window.location.href = data.url
-      } else {
-        setError('Failed to get checkout URL')
+        return
       }
+
+      setOrderId(data.orderId)
+      setTotalCents(data.totalCents)
+      setStep('payment')
+      setSelectedPaymentMethod(null)
+      setTransactionRef('')
     } catch (err) {
       setError(String(err))
     } finally {
@@ -54,16 +82,242 @@ export default function Cart() {
     }
   }
 
-  if (orderId)
+  async function handlePaymentSubmit(e) {
+    e.preventDefault()
+    setError(null)
+
+    if (!selectedPaymentMethod) {
+      setError('Please select a payment method')
+      return
+    }
+
+    if (!transactionRef.trim()) {
+      setError('Please enter your transaction reference')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/payment/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: orderId,
+          payment_method: selectedPaymentMethod,
+          transaction_reference: transactionRef.trim()
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Payment submission failed')
+        return
+      }
+
+      clearCart()
+      setStep('success')
+    } catch (err) {
+      setError(String(err))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Payment method selection UI
+  if (step === 'payment') {
     return (
       <div className="cart-page">
-        <div className="cart-main card-panel">
-          <h2>Thank you!</h2>
-          <p>Your order has been received. We will send next steps to your email shortly.</p>
+        <div className="cart-wrapper">
+          <main className="cart-main card-panel" style={{ maxWidth: '600px', margin: '0 auto' }}>
+            <div className="cart-header">
+              <h2>📱 Complete Payment</h2>
+              <p className="muted-small">Order #{orderId} • {formatMWK(totalCents)}</p>
+            </div>
+
+            <div className="payment-methods" style={{ display: 'grid', gap: '16px', marginBottom: '24px' }}>
+              {Object.entries(PAYMENT_METHODS).map(([key, method]) => (
+                <div
+                  key={key}
+                  onClick={() => setSelectedPaymentMethod(key)}
+                  style={{
+                    padding: '16px',
+                    border: selectedPaymentMethod === key ? '2px solid #d4a373' : '2px solid #e5e7eb',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    background: selectedPaymentMethod === key ? 'rgba(212, 163, 115, 0.1)' : 'white',
+                    transition: 'all 0.2s ease'
+                  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ fontSize: '24px' }}>{method.icon}</span>
+                    <div>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{method.name}</div>
+                      <div style={{ fontSize: '0.9rem', color: '#64748b' }}>{method.details}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <form onSubmit={handlePaymentSubmit}>
+              <div className="checkout-field">
+                <label>Transaction Reference</label>
+                <input
+                  type="text"
+                  value={transactionRef}
+                  onChange={(e) => setTransactionRef(e.target.value)}
+                  placeholder="Enter your transaction/reference number"
+                  style={{ padding: '10px 12px', border: '1px solid #d4a373', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}
+                />
+                <small style={{ color: '#64748b', marginTop: '4px', display: 'block' }}>
+                  Enter the transaction reference from your payment confirmation
+                </small>
+              </div>
+
+              {error && <div className="msg error" style={{ marginTop: '16px' }}>{error}</div>}
+
+              <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setStep('checkout')
+                    setError(null)
+                  }}
+                  disabled={loading}
+                  style={{ flex: 1 }}
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={loading || !selectedPaymentMethod}
+                  style={{ flex: 1 }}
+                >
+                  {loading ? 'Submitting...' : 'Submit Payment'}
+                </button>
+              </div>
+            </form>
+          </main>
         </div>
       </div>
     )
+  }
 
+  // Success page
+  if (step === 'success') {
+    return (
+      <div className="cart-page">
+        <div className="cart-main card-panel" style={{ maxWidth: '600px', margin: '40px auto', textAlign: 'center' }}>
+          <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
+          <h2>Payment Submitted Successfully!</h2>
+          <p style={{ color: '#64748b', marginTop: '12px', marginBottom: '24px' }}>
+            Order #{orderId} has been created. We've received your transaction reference and will verify your payment shortly. 
+          </p>
+          <p style={{ color: '#64748b', marginBottom: '24px' }}>
+            We'll send you a confirmation email at <strong>{customer.customer_email}</strong> once your payment is processed.
+          </p>
+          <button
+            onClick={() => window.location.href = '/'}
+            className="btn btn-primary"
+          >
+            Continue Shopping
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Checkout form (collect customer details)
+  if (step === 'checkout') {
+    return (
+      <div className="cart-page">
+        <div className="cart-wrapper">
+          <main className="cart-main card-panel" style={{ maxWidth: '600px', margin: '0 auto' }}>
+            <div className="cart-header">
+              <h2>Checkout</h2>
+              <p className="muted-small">Enter your details to continue</p>
+            </div>
+
+            <form onSubmit={handleCheckout}>
+              <div className="checkout-field">
+                <label>Full Name</label>
+                <input
+                  value={customer.customer_name}
+                  onChange={(e) => setCustomer({ ...customer, customer_name: e.target.value })}
+                  placeholder="Full name"
+                  style={{ padding: '10px 12px', border: '1px solid #d4a373', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}
+                  required
+                />
+              </div>
+
+              <div className="checkout-field">
+                <label>Email</label>
+                <input
+                  type="email"
+                  value={customer.customer_email}
+                  onChange={(e) => setCustomer({ ...customer, customer_email: e.target.value })}
+                  placeholder="you@example.com"
+                  style={{ padding: '10px 12px', border: '1px solid #d4a373', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div className="checkout-field">
+                <label>Phone</label>
+                <input
+                  type="tel"
+                  value={customer.customer_phone}
+                  onChange={(e) => setCustomer({ ...customer, customer_phone: e.target.value })}
+                  placeholder="+265 99 123 4567"
+                  style={{ padding: '10px 12px', border: '1px solid #d4a373', borderRadius: '8px', width: '100%', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ padding: '16px', background: 'rgba(212, 163, 115, 0.1)', borderRadius: '8px', marginTop: '24px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span>Subtotal:</span>
+                  <strong>{formatMWK(cartTotalCents)}</strong>
+                </div>
+                {savings > 0 && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', color: '#10b981' }}>
+                    <span>Savings:</span>
+                    <strong>{formatMWK(savings)}</strong>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.1rem', fontWeight: 700 }}>
+                  <span>Total:</span>
+                  <span>{formatMWK(cartTotalCents)}</span>
+                </div>
+              </div>
+
+              {error && <div className="msg error">{error}</div>}
+
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setStep('cart')}
+                  disabled={loading}
+                  style={{ flex: 1 }}
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={loading || items.length === 0}
+                  style={{ flex: 1 }}
+                >
+                  {loading ? 'Processing...' : 'Continue to Payment'}
+                </button>
+              </div>
+            </form>
+          </main>
+        </div>
+      </div>
+    )
+  }
+
+  // Default cart view
   return (
     <div className="cart-page">
       <div className="cart-wrapper">
@@ -87,11 +341,12 @@ export default function Cart() {
             </div>
           ) : (
             <ul className="cart-list">
-              {items.map((it) => {
+              {items.map((it, index) => {
                 const hasDiscount = it.discount_percent && it.discount_percent > 0
                 const originalPrice = it.original_price_cents ? formatMWK(it.original_price_cents) : null
+                const customizations = it.customizations || {}
                 return (
-                  <li key={it.id} className="cart-item">
+                  <li key={`${it.id}-${index}`} className="cart-item">
                     <div className="cart-item-details">
                       <div>
                         <h3>{it.name}</h3>
@@ -99,17 +354,26 @@ export default function Cart() {
                         {hasDiscount && originalPrice && (
                           <div className="cart-item-original">{originalPrice} each</div>
                         )}
+                        {customizations.customIngredients && (
+                          <div className="muted-small">Custom: {customizations.customIngredients}</div>
+                        )}
+                        {Object.keys(customizations.preferences || {}).filter(k => customizations.preferences[k]).length > 0 && (
+                          <div className="muted-small">Prefs: {Object.keys(customizations.preferences).filter(k => customizations.preferences[k]).join(', ')}</div>
+                        )}
+                        {customizations.pickupTime && (
+                          <div className="muted-small">Pickup: {new Date(customizations.pickupTime).toLocaleString()}</div>
+                        )}
                       </div>
                       {hasDiscount && <span className="cart-badge">{it.discount_percent}% OFF</span>}
                     </div>
 
                     <div className="cart-item-actions">
                       <div className="quantity-control">
-                        <button type="button" className="qty-btn" onClick={() => updateQuantity(it.id, it.qty - 1)}>-</button>
+                        <button type="button" className="qty-btn" onClick={() => updateQuantity(it.id, it.qty - 1, customizations)}>-</button>
                         <span>{it.qty}</span>
-                        <button type="button" className="qty-btn" onClick={() => updateQuantity(it.id, it.qty + 1)}>+</button>
+                        <button type="button" className="qty-btn" onClick={() => updateQuantity(it.id, it.qty + 1, customizations)}>+</button>
                       </div>
-                      <button type="button" className="btn btn-tertiary btn-sm" onClick={() => removeFromCart(it.id)}>Remove</button>
+                      <button type="button" className="btn btn-tertiary btn-sm" onClick={() => removeFromCart(it.id, customizations)}>Remove</button>
                     </div>
                   </li>
                 )
@@ -125,7 +389,7 @@ export default function Cart() {
           </div>
           <div className="summary-row">
             <span>Subtotal</span>
-            <strong>{formatMWK(totalCents)}</strong>
+            <strong>{formatMWK(cartTotalCents)}</strong>
           </div>
           {savings > 0 && (
             <div className="summary-row savings-row">
@@ -135,26 +399,19 @@ export default function Cart() {
           )}
           <div className="summary-row total-row">
             <span>Total</span>
-            <strong>{formatMWK(totalCents)}</strong>
+            <strong>{formatMWK(cartTotalCents)}</strong>
           </div>
 
-          <form onSubmit={handleCheckout} className="checkout-form">
-            <div className="checkout-field">
-              <label>Name</label>
-              <input value={customer.customer_name} onChange={(e) => setCustomer({ ...customer, customer_name: e.target.value })} placeholder="Full name" />
-            </div>
-            <div className="checkout-field">
-              <label>Email</label>
-              <input type="email" value={customer.customer_email} onChange={(e) => setCustomer({ ...customer, customer_email: e.target.value })} placeholder="you@example.com" />
-            </div>
-            <div className="checkout-field">
-              <label>Phone</label>
-              <input type="tel" value={customer.customer_phone} onChange={(e) => setCustomer({ ...customer, customer_phone: e.target.value })} placeholder="+265 99 123 4567" />
-            </div>
-            {error && <div className="msg error">{error}</div>}
-            <button type="submit" className="btn btn-primary" disabled={loading || items.length === 0}>
-              {loading ? 'Processing…' : 'Proceed to checkout'}
-            </button>
+          <form onSubmit={(e) => { e.preventDefault(); setStep('checkout') }} className="checkout-form">
+            {items.length === 0 ? (
+              <button type="button" className="btn btn-primary" disabled>
+                Cart is empty
+              </button>
+            ) : (
+              <button type="submit" className="btn btn-primary">
+                Proceed to checkout
+              </button>
+            )}
           </form>
         </aside>
       </div>

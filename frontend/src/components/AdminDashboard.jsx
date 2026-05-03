@@ -19,6 +19,7 @@ export default function AdminDashboard() {
   const [categories, setCategories] = useState([])
   const [reservations, setReservations] = useState([])
   const [promotions, setPromotions] = useState([])
+  const [payments, setPayments] = useState([])
   const [error, setError] = useState(null)
   const [editingItem, setEditingItem] = useState(null)
   const [editingCategory, setEditingCategory] = useState(null)
@@ -84,6 +85,10 @@ export default function AdminDashboard() {
         // no admin promotions without secret
         setPromotions([])
       }
+    } else if (tab === 'payments') {
+      useAdminFetch('/api/admin/payments', adminSecret)
+        .then(setPayments)
+        .catch((e) => setError(e.message))
     }
   }, [tab, adminSecret])
 
@@ -295,6 +300,15 @@ export default function AdminDashboard() {
     }
   }
 
+  async function updatePaymentStatus(payment, newStatus) {
+    try {
+      await fetchAdmin(`/api/admin/payments/${payment.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) })
+      setPayments((prev) => prev.map((p) => (p.id === payment.id ? { ...p, status: newStatus, processed_at: newStatus === 'processed' ? new Date().toISOString() : null } : p)))
+    } catch (e) {
+      setError(String(e))
+    }
+  }
+
   return (
     <div style={{ background: 'linear-gradient(135deg, #faf9f8 0%, #f5f1ed 100%)', minHeight: '100vh', paddingBottom: 60 }}>
       <div style={{ maxWidth: 1400, margin: '0 auto', padding: '40px 28px' }}>
@@ -350,7 +364,7 @@ export default function AdminDashboard() {
               paddingBottom: '12px',
               borderBottom: '2px solid rgba(212,163,115,0.1)'
             }}>
-              {['reports', 'orders', 'categories', 'menu', 'promotions', 'reservations'].map((tabName) => (
+              {['reports', 'orders', 'payments', 'categories', 'menu', 'promotions', 'reservations'].map((tabName) => (
                 <button
                   key={tabName}
                   onClick={() => setTab(tabName)}
@@ -377,7 +391,7 @@ export default function AdminDashboard() {
                       e.target.style.background = 'rgba(212,163,115,0.1)'
                     }
                   }}>
-                  {tabName === 'reports' && '📊'} {tabName === 'orders' && '📦'} {tabName === 'categories' && '📂'} {tabName === 'menu' && '🍽️'} {tabName === 'promotions' && '🎉'} {tabName === 'reservations' && '📅'} {tabName.charAt(0).toUpperCase() + tabName.slice(1)}
+                  {tabName === 'reports' && '📊'} {tabName === 'orders' && '📦'} {tabName === 'payments' && '💳'} {tabName === 'categories' && '📂'} {tabName === 'menu' && '🍽️'} {tabName === 'promotions' && '🎉'} {tabName === 'reservations' && '📅'} {tabName.charAt(0).toUpperCase() + tabName.slice(1)}
                 </button>
               ))}
             </div>
@@ -642,6 +656,110 @@ export default function AdminDashboard() {
                                 }}>
                                   {o.status}
                                 </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Payments Tab */}
+            {tab === 'payments' && (
+              <div>
+                <div style={{ background: 'white', padding: '24px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(15,23,42,0.06)' }}>
+                  <h3 style={{ margin: '0 0 20px', fontSize: '1.3rem', fontWeight: 700, color: '#0f172a' }}>💳 Payment Tracking</h3>
+                  {payments.length === 0 ? (
+                    <p style={{ color: '#64748b' }}>No payments yet</p>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid rgba(212,163,115,0.1)' }}>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Order #</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Customer</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Method</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Transaction Ref</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Amount</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Status</th>
+                            <th style={{ padding: '12px', textAlign: 'left', fontWeight: 700, color: '#0f172a' }}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payments.map((p) => (
+                            <tr key={p.id} style={{ borderBottom: '1px solid rgba(212,163,115,0.05)', transition: 'background 0.2s ease' }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(212,163,115,0.05)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}>
+                              <td style={{ padding: '12px', fontWeight: 700, color: '#d4a373' }}>#{p.order_id}</td>
+                              <td style={{ padding: '12px', color: '#0f172a' }}>
+                                <div style={{ fontWeight: 600 }}>{p.customer_name}</div>
+                                <div style={{ fontSize: '0.85rem', color: '#64748b' }}>{p.customer_phone}</div>
+                              </td>
+                              <td style={{ padding: '12px', color: '#0f172a', fontWeight: 600 }}>
+                                {p.payment_method === 'bank_transfer' && '🏦 Bank Transfer'}
+                                {p.payment_method === 'airtel_money' && '📱 Airtel Money'}
+                                {p.payment_method === 'mpamba' && '💳 M\'pamba'}
+                              </td>
+                              <td style={{ padding: '12px', color: '#0f172a', fontFamily: 'monospace', fontSize: '0.9rem' }}>{p.transaction_reference || '-'}</td>
+                              <td style={{ padding: '12px', fontWeight: 700, color: '#10b981' }}>{formatMWK(p.amount_cents)}</td>
+                              <td style={{ padding: '12px' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '4px 12px',
+                                  borderRadius: '999px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 700,
+                                  background: p.status === 'pending' ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                                  color: p.status === 'pending' ? '#f59e0b' : '#10b981'
+                                }}>
+                                  {p.status}
+                                </span>
+                              </td>
+                              <td style={{ padding: '12px' }}>
+                                {p.status === 'pending' ? (
+                                  <button onClick={() => updatePaymentStatus(p, 'processed')} style={{
+                                    padding: '6px 12px',
+                                    background: 'rgba(16, 185, 129, 0.2)',
+                                    color: '#10b981',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600,
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.target.style.background = 'rgba(16, 185, 129, 0.3)'
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.target.style.background = 'rgba(16, 185, 129, 0.2)'
+                                  }}>
+                                    ✓ Process
+                                  </button>
+                                ) : (
+                                  <button onClick={() => updatePaymentStatus(p, 'pending')} style={{
+                                    padding: '6px 12px',
+                                    background: 'rgba(245, 158, 11, 0.2)',
+                                    color: '#f59e0b',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600,
+                                    transition: 'all 0.2s ease'
+                                  }}
+                                  onMouseEnter={(e) => {
+                                    e.target.style.background = 'rgba(245, 158, 11, 0.3)'
+                                  }}
+                                  onMouseLeave={(e) => {
+                                    e.target.style.background = 'rgba(245, 158, 11, 0.2)'
+                                  }}>
+                                    Revert
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           ))}

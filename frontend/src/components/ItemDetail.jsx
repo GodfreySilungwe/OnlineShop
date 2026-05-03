@@ -9,9 +9,22 @@ export default function ItemDetail() {
   const [loading, setLoading] = useState(true)
   const { addToCart } = useCart()
   const [cartAnimation, setCartAnimation] = useState(null)
+  const [customIngredients, setCustomIngredients] = useState('')
+  const [preferences, setPreferences] = useState({
+    spicy: false,
+    noOnions: false,
+    extraCheese: false,
+    glutenFree: false
+  })
+  const [pickupTime, setPickupTime] = useState('')
 
   const handleAddToCart = (event) => {
-    addToCart(item, 1)
+    const customizations = {
+      customIngredients,
+      preferences,
+      pickupTime
+    }
+    addToCart(item, 1, customizations)
     
     // Create animation element
     const rect = event.target.getBoundingClientRect()
@@ -61,12 +74,15 @@ export default function ItemDetail() {
   const discountedPrice = (discountedPriceCents / 100).toFixed(2)
 
   return (
-    <div className="item-detail">
-      <h2>{item.name}</h2>
-      <p className="muted">{item.description}</p>
+    <div className="item-detail" style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+      {item.image_filename && (
+        <img src={`/api/images/${item.image_filename}`} alt={item.name} style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '12px', marginBottom: '20px' }} />
+      )}
+      <h2 style={{ fontSize: '28px', marginBottom: '10px' }}>{item.name}</h2>
+      <p className="muted" style={{ fontSize: '16px', lineHeight: '1.5', marginBottom: '20px' }}>{item.description}</p>
 
-      <p>
-        <strong>Price: </strong>
+      <div style={{ marginBottom: '20px' }}>
+        <h3>Price</h3>
         {hasDiscount ? (
           <span>
             <span style={{ fontSize: 14, color: '#999', textDecoration: 'line-through', marginRight: 8 }}>{formatMWK(item.price_cents)}</span>
@@ -76,7 +92,49 @@ export default function ItemDetail() {
         ) : (
           <strong>{formatMWK(item.price_cents)}</strong>
         )}
-      </p>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h3>Custom Ingredients</h3>
+        <textarea
+          value={customIngredients}
+          onChange={(e) => setCustomIngredients(e.target.value)}
+          placeholder="Add any custom ingredients or modifications..."
+          style={{ width: '100%', height: '80px', padding: '10px', border: '1px solid #ccc', borderRadius: '8px', fontSize: '14px' }}
+        />
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h3>Preferences</h3>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+          <label>
+            <input type="checkbox" checked={preferences.spicy} onChange={(e) => setPreferences({ ...preferences, spicy: e.target.checked })} />
+            Spicy
+          </label>
+          <label>
+            <input type="checkbox" checked={preferences.noOnions} onChange={(e) => setPreferences({ ...preferences, noOnions: e.target.checked })} />
+            No Onions
+          </label>
+          <label>
+            <input type="checkbox" checked={preferences.extraCheese} onChange={(e) => setPreferences({ ...preferences, extraCheese: e.target.checked })} />
+            Extra Cheese
+          </label>
+          <label>
+            <input type="checkbox" checked={preferences.glutenFree} onChange={(e) => setPreferences({ ...preferences, glutenFree: e.target.checked })} />
+            Gluten Free
+          </label>
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '20px' }}>
+        <h3>Pickup Time</h3>
+        <input
+          type="datetime-local"
+          value={pickupTime}
+          onChange={(e) => setPickupTime(e.target.value)}
+          style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '8px', fontSize: '14px' }}
+        />
+      </div>
 
       <div style={{ marginTop: 12 }}>
         <button
@@ -86,13 +144,14 @@ export default function ItemDetail() {
             background: hasDiscount ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)' : 'var(--accent)',
             color: 'white',
             border: 'none',
-            padding: '10px 16px',
+            padding: '12px 24px',
             borderRadius: '8px',
             fontWeight: 700,
-            cursor: 'pointer'
+            cursor: 'pointer',
+            fontSize: '16px'
           }}
         >
-          Order {hasDiscount ? `— MK${discountedPrice}` : ''}
+          Add to Cart {hasDiscount ? `— MK${discountedPrice}` : ''}
         </button>
       </div>
 

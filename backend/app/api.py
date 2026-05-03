@@ -6,16 +6,7 @@ from flask import Blueprint, jsonify, request, redirect
 from flask import send_from_directory, abort
 from werkzeug.utils import secure_filename
 from . import db
-from .models import MenuItem, Category, Order, OrderItem, Subscriber, Customer, Reservation, Promotion
-import stripe
-
-# Explicitly use test mode with test keys
-stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
-# Verify we're in test mode
-if stripe.api_key and stripe.api_key.startswith('sk_test_'):
-    print("[INFO] Using Stripe TEST environment")
-else:
-    print("[WARNING] Not using Stripe test keys!")
+from .models import MenuItem, Category, Order, OrderItem, Subscriber, Customer, Reservation, Promotion, Payment
 
 # Simple admin secret (dev-only). Configure ADMIN_SECRET in your environment or .env
 ADMIN_SECRET = os.getenv('ADMIN_SECRET', 'dev-secret')
@@ -86,16 +77,8 @@ def checkout():
 
 
 @api_bp.route('/stripe-checkout', methods=['POST'])
-def stripe_checkout():
-    """Create a Stripe checkout session for the cart items and create an order in database."""
-    # Ensure Stripe API key is set at runtime
-    stripe_key = os.getenv('STRIPE_SECRET_KEY')
-    
-    if stripe_key:
-        stripe.api_key = stripe_key
-    else:
-        return jsonify({'error': 'Stripe is not configured'}), 500
-    
+def manual_checkout():
+    """Create an order and return payment details for manual payment."""
     data = request.get_json() or {}
     items = data.get('items', [])
     customer_name = data.get('customer_name')
@@ -105,11 +88,7 @@ def stripe_checkout():
     if not items or not customer_name:
         return jsonify({'error': 'Missing items or customer name'}), 400
 
-    if not stripe.api_key:
-        return jsonify({'error': 'Stripe is not configured'}), 500
-
     try:
-        # STEP 1: Create order in database BEFORE creating Stripe session
         print(f"[INFO] Creating order for customer: {customer_name}")
         order = Order(
             customer_name=customer_name,
@@ -118,12 +97,10 @@ def stripe_checkout():
             status='pending'
         )
         db.session.add(order)
-        db.session.flush()  # Get the order ID
+        db.session.flush()
         order_id = order.id
         print(f"[INFO] Order created with ID: {order_id}")
         
-        # STEP 2: Prepare line items for Stripe and create OrderItems
-        line_items = []
         order_total_cents = 0
         
         for it in items:
@@ -136,7 +113,6 @@ def stripe_checkout():
             price_cents = int(menu_item.price_cents)
             order_total_cents += price_cents * qty
             
-            # Create OrderItem
             order_item = OrderItem(
                 order_id=order_id,
                 menu_item_id=menu_item.id,
@@ -145,60 +121,75 @@ def stripe_checkout():
             )
             db.session.add(order_item)
             print(f"[INFO] Added item {menu_item.name} (qty: {qty}) to order")
-            
-            # For Stripe, price is in cents
-            # Note: Stripe doesn't support MWK directly, using USD for test environment
-            # Frontend displays prices in MWK (Malawi Kwacha)
-            line_items.append({
-                'price_data': {
-                    'currency': 'usd',
-                    'product_data': {
-                        'name': menu_item.name,
-                        'description': menu_item.description,
-                    },
-                    'unit_amount': price_cents,
-                },
-                'quantity': qty,
-            })
         
-        # Update order total
         order.total_cents = order_total_cents
+        
+        # Create initial payment record with pending status
+        payment = Payment(
+            order_id=order_id,
+            transaction_reference='',  # Will be filled by customer
+            payment_method='',  # Will be filled by customer
+            amount_cents=order_total_cents,
+            status='pending'
+        )
+        db.session.add(payment)
         db.session.commit()
         print(f"[INFO] Order {order_id} saved with total: {order_total_cents} cents")
 
-        # STEP 3: Create Stripe checkout session
-        domain = os.getenv('DOMAIN', 'http://localhost:5173')
-        
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=line_items,
-            mode='payment',
-            customer_email=customer_email,
-            success_url=f"{domain}/success?session_id={{CHECKOUT_SESSION_ID}}&order_id={order_id}",
-            cancel_url=f"{domain}/cart",
-            metadata={
-                'order_id': str(order_id),
-                'customer_name': customer_name,
-                'customer_phone': customer_phone,
-            }
-        )
-        
-        print(f"[INFO] Stripe session created: {checkout_session.id}")
-
         return jsonify({
-            'sessionId': checkout_session.id,
-            'url': checkout_session.url,
             'orderId': order_id,
+            'totalCents': order_total_cents,
+            'status': 'created'
         }), 200
 
-    except stripe.error.StripeError as e:
-        print(f"[ERROR] Stripe error: {str(e)}")
-        db.session.rollback()
-        return jsonify({'error': str(e)}), 400
     except Exception as e:
         print(f"[ERROR] General exception: {str(e)}")
         db.session.rollback()
-        return jsonify({'error': 'Failed to create checkout session'}), 500
+        return jsonify({'error': 'Failed to create order'}), 500
+
+
+@api_bp.route('/payment/submit', methods=['POST'])
+def submit_payment():
+    """Submit payment transaction reference for an order."""
+    data = request.get_json() or {}
+    order_id = data.get('order_id')
+    transaction_reference = data.get('transaction_reference', '').strip()
+    payment_method = data.get('payment_method', '').strip()
+
+    if not order_id or not transaction_reference or not payment_method:
+        return jsonify({'error': 'Missing order_id, transaction_reference, or payment_method'}), 400
+
+    if payment_method not in ['bank_transfer', 'airtel_money', 'mpamba']:
+        return jsonify({'error': 'Invalid payment method'}), 400
+
+    try:
+        order = Order.query.get(order_id)
+        if not order:
+            return jsonify({'error': 'Order not found'}), 404
+
+        # Find or create payment record
+        payment = Payment.query.filter_by(order_id=order_id).first()
+        if not payment:
+            return jsonify({'error': 'Payment record not found'}), 404
+
+        payment.transaction_reference = transaction_reference
+        payment.payment_method = payment_method
+        payment.status = 'pending'  # Awaiting admin verification
+        
+        db.session.commit()
+        print(f"[INFO] Payment submitted for order {order_id}: {payment_method} - {transaction_reference}")
+
+        return jsonify({
+            'success': True,
+            'orderId': order_id,
+            'paymentId': payment.id,
+            'message': 'Payment reference submitted. Please wait for confirmation.'
+        }), 200
+
+    except Exception as e:
+        print(f"[ERROR] Error submitting payment: {str(e)}")
+        db.session.rollback()
+        return jsonify({'error': 'Failed to submit payment'}), 500
 
 
 @api_bp.route('/')
@@ -654,6 +645,73 @@ def newsletter_signup():
     db.session.add(sub)
     db.session.commit()
     return jsonify({'status': 'subscribed', 'id': sub.id}), 201
+
+
+# --- Payment Management (Admin) -----------------------------------------------
+
+@api_bp.route('/admin/payments', methods=['GET'])
+def admin_list_payments():
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    payments = Payment.query.order_by(Payment.created_at.desc()).all()
+    result = []
+    for p in payments:
+        order = Order.query.get(p.order_id)
+        result.append({
+            'id': p.id,
+            'order_id': p.order_id,
+            'customer_name': order.customer_name if order else 'Unknown',
+            'customer_phone': order.customer_phone if order else '',
+            'transaction_reference': p.transaction_reference,
+            'payment_method': p.payment_method,
+            'amount_cents': p.amount_cents,
+            'status': p.status,
+            'created_at': p.created_at.isoformat(),
+            'processed_at': p.processed_at.isoformat() if p.processed_at else None
+        })
+    return jsonify(result)
+
+
+@api_bp.route('/admin/payments/<int:payment_id>', methods=['PUT', 'PATCH'])
+def admin_update_payment(payment_id):
+    if not _is_admin(request):
+        return jsonify({'error': 'unauthorized'}), 401
+    payment = Payment.query.get(payment_id)
+    if not payment:
+        return jsonify({'error': 'Payment not found'}), 404
+    
+    data = request.get_json() or {}
+    new_status = data.get('status', '').strip()
+    
+    if new_status not in ['pending', 'processed']:
+        return jsonify({'error': 'Invalid status. Must be "pending" or "processed"'}), 400
+    
+    try:
+        if new_status == 'processed' and payment.status != 'processed':
+            payment.status = 'processed'
+            payment.processed_at = datetime.utcnow()
+            
+            # Also update the associated order status to confirmed
+            order = Order.query.get(payment.order_id)
+            if order:
+                order.status = 'confirmed'
+        elif new_status == 'pending':
+            payment.status = 'pending'
+            payment.processed_at = None
+        
+        db.session.commit()
+        print(f"[INFO] Payment {payment_id} status updated to {new_status}")
+        
+        return jsonify({
+            'id': payment.id,
+            'order_id': payment.order_id,
+            'status': payment.status,
+            'processed_at': payment.processed_at.isoformat() if payment.processed_at else None
+        }), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ERROR] Error updating payment: {str(e)}")
+        return jsonify({'error': 'Failed to update payment'}), 500
 
 
 # --- Airtel Money integration ------------------------------------------------

@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { formatMWK } from '../utils/currency'
 
@@ -7,12 +6,26 @@ import { formatMWK } from '../utils/currency'
 export default function ItemCard({ item }) {
   const { addToCart } = useCart()
   const [cartAnimation, setCartAnimation] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [customIngredients, setCustomIngredients] = useState('')
+  const [preferences, setPreferences] = useState({
+    spicy: false,
+    noOnions: false,
+    extraCheese: false,
+    glutenFree: false
+  })
+  const [pickupTime, setPickupTime] = useState('')
   const img = item && item.image_filename ? item.image_filename : null
   const hasDiscount = item.discount_percent && item.discount_percent > 0
   const discountedPrice = hasDiscount ? ((item.price_cents * (100 - item.discount_percent)) / 10000).toFixed(2) : null
 
   const handleAddToCart = (event) => {
-    addToCart(item, 1)
+    const customizations = {
+      customIngredients,
+      preferences,
+      pickupTime
+    }
+    addToCart(item, 1, customizations)
     
     // Create animation element
     const rect = event.target.getBoundingClientRect()
@@ -29,10 +42,13 @@ export default function ItemCard({ item }) {
     setTimeout(() => {
       setCartAnimation(null)
     }, 800)
+
+    // Close modal
+    setIsModalOpen(false)
   }
 
   return (
-    <div className="item-card" style={{ background: 'var(--surface)', boxShadow: '0 12px 32px rgba(0,0,0,0.1)', borderRadius: '16px', overflow: 'hidden', transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)', cursor: 'pointer', position: 'relative' }}>
+    <div className="item-card" style={{ background: 'var(--surface)', boxShadow: '0 12px 32px rgba(0,0,0,0.1)', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', position: 'relative' }} onClick={() => setIsModalOpen(true)}>
       {img ? (
         <div
           className="thumb"
@@ -69,7 +85,7 @@ export default function ItemCard({ item }) {
 
       <div className="card-content" style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <h3 className="card-title" style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: 700 }}>
-          <Link to={`/item/${item.id}`} style={{ color: 'var(--accent)', textDecoration: 'none', transition: 'color 0.2s' }}>{item.name}</Link>
+          {item.name}
         </h3>
         <p className="muted card-desc" style={{ margin: '0 0 12px 0', color: 'var(--muted)', fontSize: '13px', lineHeight: 1.4, flex: 1 }}>{item.description}</p>
 
@@ -85,7 +101,7 @@ export default function ItemCard({ item }) {
             )}
           </div>
           <button
-            onClick={handleAddToCart}
+            onClick={(e) => { e.stopPropagation(); setIsModalOpen(true) }}
             className="btn"
             style={{
               background: hasDiscount ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)' : 'var(--accent)',
@@ -96,16 +112,102 @@ export default function ItemCard({ item }) {
               fontWeight: 600,
               cursor: 'pointer',
               fontSize: '13px',
-              transition: 'all 0.2s',
               boxShadow: hasDiscount ? '0 4px 12px rgba(255, 107, 107, 0.3)' : 'none'
             }}
-            onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
-            onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
           >
-            Order
+            Customize
           </button>
         </div>
       </div>
+
+      {isModalOpen && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }} onClick={() => setIsModalOpen(false)}>
+          <div style={{
+            background: 'white',
+            padding: '20px',
+            borderRadius: '12px',
+            maxWidth: '500px',
+            width: '100%',
+            maxHeight: '80vh',
+            overflow: 'auto'
+          }} onClick={(e) => e.stopPropagation()}>
+            <h2>{item.name}</h2>
+            <p>{item.description}</p>
+            <p><strong>Price: </strong>{hasDiscount ? `MK${discountedPrice}` : formatMWK(item.price_cents)}</p>
+
+            <div style={{ marginBottom: '20px' }}>
+              <h3>Custom Ingredients</h3>
+              <textarea
+                value={customIngredients}
+                onChange={(e) => setCustomIngredients(e.target.value)}
+                placeholder="Add any custom ingredients or modifications..."
+                style={{ width: '100%', height: '80px', padding: '10px', border: '1px solid #ccc', borderRadius: '8px', fontSize: '14px' }}
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <h3>Preferences</h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                <label>
+                  <input type="checkbox" checked={preferences.spicy} onChange={(e) => setPreferences({ ...preferences, spicy: e.target.checked })} />
+                  Spicy
+                </label>
+                <label>
+                  <input type="checkbox" checked={preferences.noOnions} onChange={(e) => setPreferences({ ...preferences, noOnions: e.target.checked })} />
+                  No Onions
+                </label>
+                <label>
+                  <input type="checkbox" checked={preferences.extraCheese} onChange={(e) => setPreferences({ ...preferences, extraCheese: e.target.checked })} />
+                  Extra Cheese
+                </label>
+                <label>
+                  <input type="checkbox" checked={preferences.glutenFree} onChange={(e) => setPreferences({ ...preferences, glutenFree: e.target.checked })} />
+                  Gluten Free
+                </label>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <h3>Pickup Time</h3>
+              <input
+                type="datetime-local"
+                value={pickupTime}
+                onChange={(e) => setPickupTime(e.target.value)}
+                style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '8px', fontSize: '14px', width: '100%' }}
+              />
+            </div>
+
+            <button
+              onClick={handleAddToCart}
+              className="btn"
+              style={{
+                background: hasDiscount ? 'linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%)' : 'var(--accent)',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '8px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                fontSize: '16px'
+              }}
+            >
+              Add to Cart
+            </button>
+          </div>
+        </div>
+      )}
 
       {cartAnimation && (
         <div

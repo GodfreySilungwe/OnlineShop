@@ -17,29 +17,29 @@ export function CartProvider({ children }) {
     localStorage.setItem('cart', JSON.stringify(items))
   }, [items])
 
-  function addToCart(item, qty = 1) {
+  function addToCart(item, qty = 1, customizations = {}) {
     setItems((prev) => {
-      const found = prev.find((p) => p.id === item.id)
+      const found = prev.find((p) => p.id === item.id && JSON.stringify(p.customizations) === JSON.stringify(customizations))
       // If item has a discount (from promotions), use the discounted price
       const price = item.discount_percent ? Math.round(item.price_cents * (100 - item.discount_percent) / 100) : item.price_cents
       if (found) {
-        return prev.map((p) => (p.id === item.id ? { ...p, qty: p.qty + qty, price_cents: price } : p))
+        return prev.map((p) => (p.id === item.id && JSON.stringify(p.customizations) === JSON.stringify(customizations) ? { ...p, qty: p.qty + qty, price_cents: price } : p))
       }
-      return [...prev, { id: item.id, name: item.name, price_cents: price, qty, original_price_cents: item.price_cents, discount_percent: item.discount_percent }]
+      return [...prev, { id: item.id, name: item.name, price_cents: price, qty, original_price_cents: item.price_cents, discount_percent: item.discount_percent, customizations }]
     })
   }
 
-  function removeFromCart(itemId) {
-    setItems((prev) => prev.filter((item) => item.id !== itemId))
+  function removeFromCart(itemId, customizations = {}) {
+    setItems((prev) => prev.filter((item) => !(item.id === itemId && JSON.stringify(item.customizations) === JSON.stringify(customizations))))
   }
 
-  function updateQuantity(itemId, newQty) {
+  function updateQuantity(itemId, newQty, customizations = {}) {
     if (newQty <= 0) {
-      removeFromCart(itemId)
+      removeFromCart(itemId, customizations)
       return
     }
     setItems((prev) => prev.map((item) => 
-      item.id === itemId ? { ...item, qty: newQty } : item
+      item.id === itemId && JSON.stringify(item.customizations) === JSON.stringify(customizations) ? { ...item, qty: newQty } : item
     ))
   }
 

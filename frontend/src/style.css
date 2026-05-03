@@ -88,7 +88,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 .hero-actions {
   display: flex;
   justify-content: center;
-  gap: 1rem;
+  gap: 1.25rem;
   flex-wrap: wrap;
   margin-bottom: 2.5rem;
 }
@@ -104,25 +104,32 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   text-decoration: none;
   cursor: pointer;
   transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 10px 30px rgba(44, 24, 16, 0.12);
 }
 
 .btn-primary {
   background: var(--accent);
   color: var(--accent-dark);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14);
 }
 
 .btn-secondary {
-  background: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.16);
   color: white;
-  border: 1px solid rgba(255,255,255,0.28);
+  border: 1px solid rgba(255,255,255,0.22);
+  backdrop-filter: blur(10px);
+}
+
+.btn-secondary:hover {
+  background: rgba(255,255,255,0.28);
 }
 
 .btn:hover {
   transform: translateY(-2px);
 }
 
-/* Shake animation for card hover */
-@keyframes shake {
+/* Shake animation for card hover - disabled for item cards since they now open modals */
+/* @keyframes shake {
   0%, 100% { transform: translateX(0) rotateZ(0deg); }
   15% { transform: translateX(-3px) rotateZ(-0.5deg); }
   30% { transform: translateX(3px) rotateZ(0.5deg); }
@@ -135,7 +142,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 .item-card:hover {
   animation: shake 0.5s ease-in-out;
   transform: translateY(-8px);
-}
+} */
 
 /* Apply shake animation to all homepage cards */
 .promo-card:hover,
@@ -271,13 +278,19 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 }
 
 .advert-card {
-  background: rgba(255,255,255,0.95);
+  background: rgba(255,255,255,0.96);
   border-radius: 28px;
   padding: 2.25rem;
-  box-shadow: 0 30px 70px rgba(0,0,0,0.09);
+  box-shadow: 0 36px 90px rgba(0,0,0,0.1);
   border: 1px solid rgba(212,163,115,0.16);
   display: grid;
   gap: 1rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.advert-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 42px 110px rgba(0,0,0,0.14);
 }
 
 .advert-icon {
@@ -347,12 +360,26 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   box-shadow: var(--shadow);
   display: grid;
   grid-template-rows: 220px auto;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.promo-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 36px 90px rgba(0,0,0,0.14);
 }
 
 .promo-image {
   min-height: 220px;
   background-size: cover;
   background-position: center;
+  position: relative;
+}
+
+.promo-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.4) 100%);
 }
 
 .promo-copy {
@@ -426,6 +453,12 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   overflow: hidden;
   background: white;
   box-shadow: var(--shadow);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.menu-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 36px 90px rgba(0,0,0,0.14);
 }
 
 .menu-image {
@@ -470,13 +503,15 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 }
 
 .btn-tertiary {
-  border: 1px solid rgba(44,24,16,0.1);
+  border: 1px solid rgba(44,24,16,0.15);
   color: var(--accent-dark);
   background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(212,163,115,0.08);
 }
 
 .btn-tertiary:hover {
   background: #f8f1e7;
+  transform: translateY(-2px);
 }
 
 .events-grid {
@@ -490,6 +525,12 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   box-shadow: var(--shadow);
   display: grid;
   grid-template-rows: 220px auto;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.event-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 36px 90px rgba(0,0,0,0.14);
 }
 
 .event-image {
@@ -537,6 +578,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   border-radius: 28px;
   background: linear-gradient(135deg, #2c1810 0%, #3d2317 100%);
   color: white;
+  box-shadow: 0 30px 80px rgba(12,12,12,0.18);
 }
 
 .cta-panel span {
@@ -563,6 +605,7 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
 .home-footer {
   padding-top: 4rem;
   color: #7c6a58;
+  border-top: 1px solid rgba(212,163,115,0.15);
 }
 
 .footer-grid {

@@ -28,6 +28,9 @@ class Order(db.Model):
     total_cents = db.Column(db.Integer)
     status = db.Column(db.String(64), default='pending')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # relationship to payments
+    payments = db.relationship('Payment', backref='order', cascade='all, delete-orphan')
 
 class OrderItem(db.Model):
     __tablename__ = 'order_items'
@@ -75,3 +78,15 @@ class Promotion(db.Model):
     percent = db.Column(db.Integer, nullable=False, default=0)  # discount percent (0-100)
     active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class Payment(db.Model):
+    __tablename__ = 'payments'
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('orders.id'), nullable=False)
+    transaction_reference = db.Column(db.String(256), nullable=False)
+    payment_method = db.Column(db.String(64), nullable=False)  # 'bank_transfer', 'airtel_money', 'mpamba'
+    amount_cents = db.Column(db.Integer, nullable=False)  # amount paid
+    status = db.Column(db.String(64), default='pending')  # 'pending', 'processed'
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    processed_at = db.Column(db.DateTime, nullable=True)
