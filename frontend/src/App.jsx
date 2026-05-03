@@ -51,7 +51,7 @@ function HeaderBar({ searchQuery, onSearchChange }) {
         </button>
         <nav className={`nav-links${menuOpen ? ' open' : ''}`}>
           <NavLink onClick={() => setMenuOpen(false)} to="/" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Home</NavLink>
-          <NavLink onClick={() => setMenuOpen(false)} to="/menu" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Menu</NavLink>
+          <NavLink onClick={() => setMenuOpen(false)} to="/menu" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>Explore our menu</NavLink>
           <NavLink onClick={() => setMenuOpen(false)} to="/cart" className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}>
             Cart{total > 0 && <span style={badgeStyle}>{total}</span>}
           </NavLink>
