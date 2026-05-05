@@ -5,7 +5,7 @@ const S3_BUCKET_URL = 'http://goshretrauntfrontendbucket.s3-website-us-east-1.am
 export const getApiUrl = (path) => {
   // Remove leading slash from path if present
   const cleanPath = path.startsWith('/') ? path.slice(1) : path
-  return `${API_BASE_URL}/${cleanPath}`
+  return `${API_BASE_URL}/api/${cleanPath}`
 }
 
 export const getImageSources = (filename) => {

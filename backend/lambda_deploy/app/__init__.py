@@ -10,8 +10,8 @@ def create_app():
     app.config['JSON_SORT_KEYS'] = False
 
     # Enable CORS for all routes - allow CloudFront origins
-    cors_origins = os.getenv('CORS_ORIGINS', 'https://your-cloudfront-distribution.cloudfront.net').split(',')
-    CORS(app, resources={r"/api/*": {"origins": cors_origins}})
+    cors_origins = os.getenv('CORS_ORIGINS', 'http://goshretrauntfrontendbucket.s3-website-us-east-1.amazonaws.com').split(',')
+    CORS(app, origins=cors_origins)  # Removed the resources parameter - applies to EVERY route
 
     # Create the DynamoDB table only when the app starts, not on import
     from .models import ensure_table_exists
