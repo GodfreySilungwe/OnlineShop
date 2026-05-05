@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useCart } from '../context/CartContext'
 import { formatMWK } from '../utils/currency'
+import { getImageSources } from '../utils/api'
 
 
 export default function ItemCard({ item }) {
@@ -16,6 +17,7 @@ export default function ItemCard({ item }) {
   })
   const [pickupTime, setPickupTime] = useState('')
   const img = item && item.image_filename ? item.image_filename : null
+  const imageSources = img ? getImageSources(img) : { primary: null, fallback: null }
   const hasDiscount = item.discount_percent && item.discount_percent > 0
   const discountedPrice = hasDiscount ? ((item.price_cents * (100 - item.discount_percent)) / 10000).toFixed(2) : null
 
@@ -33,7 +35,7 @@ export default function ItemCard({ item }) {
       id: Date.now(),
       x: rect.left + rect.width / 2,
       y: rect.top + rect.height / 2,
-      image: img ? `/api/images/${img}` : null
+      image: img ? imageSources.primary : null
     }
     
     setCartAnimation(animationElement)
@@ -53,7 +55,7 @@ export default function ItemCard({ item }) {
         <div
           className="thumb"
           style={{
-            backgroundImage: `linear-gradient(135deg, rgba(107, 114, 128, 0.3) 0%, rgba(55, 65, 81, 0.3) 100%), url(/api/images/${img})`,
+            backgroundImage: `linear-gradient(135deg, rgba(107, 114, 128, 0.3) 0%, rgba(55, 65, 81, 0.3) 100%), url(${imageSources.primary}), url(${imageSources.fallback})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             height: '160px',

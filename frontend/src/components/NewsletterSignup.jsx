@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { apiFetch } from '../utils/api'
 
 export default function NewsletterSignup() {
   const [email, setEmail] = useState('')
@@ -8,7 +9,7 @@ export default function NewsletterSignup() {
     e.preventDefault()
     setStatus(null)
     try {
-      const res = await fetch('/api/newsletter', {
+      const res = await apiFetch('newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

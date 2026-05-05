@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { formatMWK } from '../utils/currency'
+import { apiFetch, getApiUrl } from '../utils/api'
 
 function useAdminFetch(path, adminSecret) {
-  return fetch(path, { headers: { 'X-Admin-Secret': adminSecret } }).then(async (r) => {
+  return apiFetch(path, { headers: { 'X-Admin-Secret': adminSecret } }).then(async (r) => {
     if (!r.ok) {
       const err = await r.json().catch(() => ({}))
       throw new Error(err.error || `HTTP ${r.status}`)
@@ -37,38 +38,38 @@ export default function AdminDashboard() {
     // fetch categories for the create form / mapping
     // If adminSecret is available, prefer the admin endpoint. Otherwise fall back to the public /api/menu
     const fetchCats = adminSecret
-      ? () => useAdminFetch('/api/admin/categories', adminSecret)
-      : () => fetch('/api/menu').then((r) => r.json()).then((cats) => cats.map((c) => ({ id: c.id, name: c.name })))
+      ? () => useAdminFetch('admin/categories', adminSecret)
+      : () => apiFetch('menu').then((r) => r.json()).then((cats) => cats.map((c) => ({ id: c.id, name: c.name })))
 
     fetchCats()
       .then(setCategories)
       .catch(() => {})
 
     if (tab === 'orders') {
-      useAdminFetch('/api/admin/orders', adminSecret)
+      useAdminFetch('admin/orders', adminSecret)
         .then(setOrders)
         .catch((e) => setError(e.message))
     } else if (tab === 'reservations') {
-      useAdminFetch('/api/admin/reservations', adminSecret)
+      useAdminFetch('admin/reservations', adminSecret)
         .then(setReservations)
         .catch((e) => setError(e.message))
     } else if (tab === 'menu') {
-      useAdminFetch('/api/admin/menu_items', adminSecret)
+      useAdminFetch('admin/menu_items', adminSecret)
         .then(setMenuItems)
         .catch((e) => setError(e.message))
     } else if (tab === 'categories') {
-      useAdminFetch('/api/admin/categories', adminSecret)
+      useAdminFetch('admin/categories', adminSecret)
         .then(setCategories)
         .catch((e) => setError(e.message))
     } else if (tab === 'promotions') {
       // load menu items for dropdown. If admin secret is present, use admin endpoint;
       // otherwise fall back to public `/api/menu` so the dropdown still shows items.
       if (adminSecret) {
-        useAdminFetch('/api/admin/menu_items', adminSecret).then(setMenuItems).catch(() => {})
-        useAdminFetch('/api/admin/promotions', adminSecret).then(setPromotions).catch((e) => setError(e.message))
+        useAdminFetch('admin/menu_items', adminSecret).then(setMenuItems).catch(() => {})
+        useAdminFetch('admin/promotions', adminSecret).then(setPromotions).catch((e) => setError(e.message))
       } else {
         // fetch public menu and flatten items
-        fetch('/api/menu')
+        apiFetch('menu')
           .then((r) => r.json())
           .then((data) => {
             // `/api/menu` may return an array or an object { categories: [...] }
@@ -86,7 +87,7 @@ export default function AdminDashboard() {
         setPromotions([])
       }
     } else if (tab === 'payments') {
-      useAdminFetch('/api/admin/payments', adminSecret)
+      useAdminFetch('admin/payments', adminSecret)
         .then(setPayments)
         .catch((e) => setError(e.message))
     }
@@ -106,7 +107,7 @@ export default function AdminDashboard() {
     if (!adminSecret) return promptForSecret()
     opts.headers = { ...(opts.headers || {}), 'X-Admin-Secret': adminSecret }
     try {
-      const res = await fetch(path, opts)
+      const res = await apiFetch(path, opts)
       const contentType = res.headers.get('content-type') || ''
       if (res.ok) {
         if (contentType.includes('application/json')) return await res.json()
@@ -139,7 +140,7 @@ export default function AdminDashboard() {
 
   async function toggleAvailable(item) {
     try {
-      await fetchAdmin(`/api/admin/menu_items/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ available: !item.available }) })
+      await fetchAdmin(`admin/menu_items/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ available: !item.available }) })
       setMenuItems((prev) => prev.map((m) => (m.id === item.id ? { ...m, available: !m.available } : m)))
     } catch (e) {
       setError(String(e))
@@ -149,7 +150,7 @@ export default function AdminDashboard() {
   async function deleteItem(item) {
     if (!window.confirm(`Delete "${item.name}"?`)) return
     try {
-      await fetchAdmin(`/api/admin/menu_items/${item.id}`, { method: 'DELETE' })
+      await fetchAdmin(`admin/menu_items/${item.id}`, { method: 'DELETE' })
       setMenuItems((prev) => prev.filter((m) => m.id !== item.id))
     } catch (e) {
       setError(String(e))
@@ -166,12 +167,12 @@ export default function AdminDashboard() {
         formData.append('category_id', updates.category_id || item.category_id || '')
         formData.append('description', updates.description || item.description || '')
         formData.append('image', updates.imageFile)
-        await fetchAdmin(`/api/admin/menu_items/${item.id}`, { method: 'PUT', body: formData })
+        await fetchAdmin(`admin/menu_items/${item.id}`, { method: 'PUT', body: formData })
       } else {
-        await fetchAdmin(`/api/admin/menu_items/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) })
+        await fetchAdmin(`admin/menu_items/${item.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) })
       }
       // refresh list from server to pick up any image_filename changes
-      const items = await useAdminFetch('/api/admin/menu_items', adminSecret)
+      const items = await useAdminFetch('admin/menu_items', adminSecret)
       setMenuItems(items)
       setEditingItem(null)
     } catch (e) {
@@ -199,9 +200,9 @@ export default function AdminDashboard() {
         formData.append('image', form.image.files[0])
       }
 
-      await fetchAdmin('/api/admin/menu_items', { method: 'POST', body: formData })
+      await fetchAdmin('admin/menu_items', { method: 'POST', body: formData })
       // refresh list
-      const items = await useAdminFetch('/api/admin/menu_items', adminSecret)
+      const items = await useAdminFetch('admin/menu_items', adminSecret)
       setMenuItems(items)
       setEditingItem(null)
       form.reset()
@@ -217,8 +218,8 @@ export default function AdminDashboard() {
     const position = form.cat_position ? parseInt(form.cat_position.value, 10) : 0
     if (!name) return setError('category name required')
     try {
-      await fetchAdmin('/api/admin/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, position }) })
-      const cats = await useAdminFetch('/api/admin/categories', adminSecret)
+      await fetchAdmin('admin/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, position }) })
+      const cats = await useAdminFetch('admin/categories', adminSecret)
       setCategories(cats)
       setEditingCategory(null)
       form.reset()
@@ -229,7 +230,7 @@ export default function AdminDashboard() {
 
   async function updateCategory(cat, updates) {
     try {
-      await fetchAdmin(`/api/admin/categories/${cat.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) })
+      await fetchAdmin(`admin/categories/${cat.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updates) })
       setCategories((prev) => prev.map((c) => (c.id === cat.id ? { ...c, ...updates } : c)))
       setEditingCategory(null)
     } catch (e) {
@@ -240,7 +241,7 @@ export default function AdminDashboard() {
   async function deleteCategory(cat) {
     if (!window.confirm(`Delete category "${cat.name}"?`)) return
     try {
-      await fetchAdmin(`/api/admin/categories/${cat.id}`, { method: 'DELETE' })
+      await fetchAdmin(`admin/categories/${cat.id}`, { method: 'DELETE' })
       setCategories((prev) => prev.filter((c) => c.id !== cat.id))
     } catch (e) {
       setError(String(e))
@@ -249,7 +250,7 @@ export default function AdminDashboard() {
 
   async function togglePromoActive(promo) {
     try {
-      await fetchAdmin(`/api/admin/promotions/${promo.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !promo.active }) })
+      await fetchAdmin(`admin/promotions/${promo.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ active: !promo.active }) })
       setPromotions((prev) => prev.map((p) => (p.id === promo.id ? { ...p, active: !p.active } : p)))
       notifyPromotionsUpdated()
     } catch (e) {
@@ -261,7 +262,7 @@ export default function AdminDashboard() {
     const newPct = window.prompt('Discount percent (0-100)', String(promo.percent))
     if (newPct === null) return
     try {
-      await fetchAdmin(`/api/admin/promotions/${promo.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ percent: parseInt(newPct, 10) }) })
+      await fetchAdmin(`admin/promotions/${promo.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ percent: parseInt(newPct, 10) }) })
       setPromotions((prev) => prev.map((p) => (p.id === promo.id ? { ...p, percent: parseInt(newPct, 10) } : p)))
       notifyPromotionsUpdated()
     } catch (e) {
@@ -274,7 +275,7 @@ export default function AdminDashboard() {
     const itemName = item ? item.name : `item ${promo.menu_item_id}`
     if (!window.confirm(`Delete promotion for "${itemName}"?`)) return
     try {
-      await fetchAdmin(`/api/admin/promotions/${promo.id}`, { method: 'DELETE' })
+      await fetchAdmin(`admin/promotions/${promo.id}`, { method: 'DELETE' })
       setPromotions((prev) => prev.filter((p) => p.id !== promo.id))
       notifyPromotionsUpdated()
     } catch (e) {
@@ -290,8 +291,8 @@ export default function AdminDashboard() {
     const active = form.active.checked
     if (!menu_item_id || isNaN(percent)) return setError('invalid inputs')
     try {
-      await fetchAdmin('/api/admin/promotions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ menu_item_id, percent, active }) })
-      const promos = await useAdminFetch('/api/admin/promotions', adminSecret)
+      await fetchAdmin('admin/promotions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ menu_item_id, percent, active }) })
+      const promos = await useAdminFetch('admin/promotions', adminSecret)
       setPromotions(promos)
       form.reset()
       notifyPromotionsUpdated()
@@ -302,7 +303,7 @@ export default function AdminDashboard() {
 
   async function updatePaymentStatus(payment, newStatus) {
     try {
-      await fetchAdmin(`/api/admin/payments/${payment.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) })
+      await fetchAdmin(`admin/payments/${payment.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus }) })
       setPayments((prev) => prev.map((p) => (p.id === payment.id ? { ...p, status: newStatus, processed_at: newStatus === 'processed' ? new Date().toISOString() : null } : p)))
     } catch (e) {
       setError(String(e))
@@ -808,7 +809,7 @@ export default function AdminDashboard() {
                                 <button onClick={async () => {
                                   if (!window.confirm('Cancel this reservation?')) return
                                   try {
-                                    await fetchAdmin(`/api/admin/reservations/${r.id}`, { method: 'DELETE' })
+                                    await fetchAdmin(`admin/reservations/${r.id}`, { method: 'DELETE' })
                                     setReservations((prev) => prev.filter((x) => x.id !== r.id))
                                   } catch (e) { setError(String(e)) }
                                 }} style={{

@@ -11,6 +11,7 @@ import Gallery from './components/Gallery'
 // lazy-load admin dashboard
 const AdminDashboardLazy = React.lazy(() => import('./components/AdminDashboard'))
 import { CartProvider, useCart } from './context/CartContext'
+import { apiFetch } from './utils/api'
 
 function HeaderBar({ searchQuery, onSearchChange }) {
   const { items } = useCart()
@@ -93,7 +94,7 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
-    fetch('/api/menu')
+    apiFetch('menu')
       .then((r) => r.json())
       .then((data) => {
         // new /api/menu returns { categories: [...], promotions: [...] }

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { formatMWK } from '../utils/currency'
+import { apiFetch, getImageSources } from '../utils/api'
 
 export default function ItemDetail() {
   const { id } = useParams()
@@ -32,7 +33,7 @@ export default function ItemDetail() {
       id: Date.now(),
       x: rect.left + rect.width / 2,
       y: rect.top + rect.height / 2,
-      image: item.image_filename ? `/api/images/${item.image_filename}` : null
+      image: item.image_filename ? getImageSources(item.image_filename).primary : null
     }
     
     setCartAnimation(animationElement)
@@ -45,7 +46,7 @@ export default function ItemDetail() {
 
   useEffect(() => {
     setLoading(true)
-    fetch('/api/menu')
+    apiFetch('menu')
       .then((r) => r.json())
       .then((data) => {
         // /api/menu may return an array or an object { categories: [...], promotions: [...] }
@@ -73,10 +74,21 @@ export default function ItemDetail() {
     : item.price_cents
   const discountedPrice = (discountedPriceCents / 100).toFixed(2)
 
+  const imageSources = item.image_filename ? getImageSources(item.image_filename) : { primary: null, fallback: null }
+
   return (
     <div className="item-detail" style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
       {item.image_filename && (
-        <img src={`/api/images/${item.image_filename}`} alt={item.name} style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '12px', marginBottom: '20px' }} />
+        <img
+          src={imageSources.primary}
+          alt={item.name}
+          onError={(e) => {
+            if (imageSources.fallback && e.currentTarget.src !== imageSources.fallback) {
+              e.currentTarget.src = imageSources.fallback
+            }
+          }}
+          style={{ width: '100%', height: '300px', objectFit: 'cover', borderRadius: '12px', marginBottom: '20px' }}
+        />
       )}
       <h2 style={{ fontSize: '28px', marginBottom: '10px' }}>{item.name}</h2>
       <p className="muted" style={{ fontSize: '16px', lineHeight: '1.5', marginBottom: '20px' }}>{item.description}</p>

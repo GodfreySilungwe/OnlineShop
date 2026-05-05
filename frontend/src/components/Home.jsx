@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { formatMWK } from '../utils/currency'
+import { apiFetch } from '../utils/api'
 
 const FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=900&h=700&fit=crop',
@@ -81,7 +82,7 @@ function Home() {
   }
 
   useEffect(() => {
-    fetch('/api/menu')
+    apiFetch('menu')
       .then((response) => response.json())
       .then((data) => {
         const categoryData = Array.isArray(data) ? data : data.categories || []

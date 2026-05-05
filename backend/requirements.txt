@@ -1,10 +1,7 @@
-Flask==2.3.3
-Flask-SQLAlchemy==3.0.3
-Flask-Migrate==4.0.4
-Flask-CORS==4.0.0
-psycopg2-binary==2.9.7
-marshmallow==3.19.0
+boto3==1.34.0
 python-dotenv==1.0.0
-flask-smorest==0.41.0
-stripe==7.8.0
 requests==2.31.0
+stripe==7.8.0
+serverless-wsgi==3.0.0
+Flask==2.3.3
+Flask-CORS==4.0.0

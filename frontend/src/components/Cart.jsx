@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useCart } from '../context/CartContext'
 import { formatMWK } from '../utils/currency'
+import { apiFetch } from '../utils/api'
 
 const PAYMENT_METHODS = {
   bank_transfer: {
@@ -59,7 +60,7 @@ export default function Cart() {
     }
     setLoading(true)
     try {
-      const res = await fetch('/api/stripe-checkout', {
+      const res = await apiFetch('stripe-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -98,7 +99,7 @@ export default function Cart() {
 
     setLoading(true)
     try {
-      const res = await fetch('/api/payment/submit', {
+      const res = await apiFetch('payment/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

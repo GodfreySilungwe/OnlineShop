@@ -1,71 +1,112 @@
-Cafe Fausse — Local development scaffold
+# Cafe Fausse — AWS Lambda Deployment
 
-Overview
+## Overview
 
-This repository contains a minimal local-first scaffold for the Cafe Fausse interactive web app assignment.
-It includes a Flask backend, a small React frontend (Vite), and a Docker Compose file for a local PostgreSQL database. The frontend defaults to plain JavaScript (React); TypeScript is optional and can be enabled later if desired.
+This repository contains the Cafe Fausse interactive web app refactored for AWS serverless deployment.
+The backend runs on AWS Lambda with API Gateway, uses DynamoDB for data storage, and S3 for file storage.
+The frontend is served via CloudFront.
 
-Prerequisites
+## Architecture
 
-- Windows with PowerShell 
+- **Backend**: AWS Lambda + API Gateway
+- **Database**: DynamoDB (single table design)
+- **Storage**: S3 bucket
+- **Frontend**: CloudFront CDN
+- **Payments**: Stripe integration
+
+## Prerequisites
+
+- AWS Account with appropriate permissions
 - Python 3.10+
-- Node.js 18+
-- Docker & Docker Compose
+- Node.js 18+ (for frontend)
+- AWS CLI configured
 
-Quick start (recommended)
+## AWS Resources Required
 
-1. Database (already have Postgres/pgAdmin):
+1. **DynamoDB Table**: `OnlineShopTable` with the following configuration:
+   - Primary Key: PK (String), SK (String)
+   - Global Secondary Indexes:
+     - GSI1: GSI1PK (String), GSI1SK (String)
+     - GSI2: GSI2PK (String), GSI2SK (String)
+     - GSI3: GSI3PK (String), GSI3SK (String)
+     - GSI4: GSI4PK (String), GSI4SK (String)
+     - GSI5: GSI5PK (String), GSI5SK (String)
+     - GSI6: GSI6PK (String), GSI6SK (String)
 
-If you already run PostgreSQL and pgAdmin locally, skip any Docker-based DB setup. Ensure a database and user exist matching `backend/.env.example` or set `DATABASE_URL` to your preferred connection string.
+2. **S3 Bucket**: For storing uploaded images
 
-Example (psql) to create the database and user if needed:
+3. **Lambda Function**: Python 3.10 runtime
 
-```powershell
-psql -U postgres
-CREATE USER cafefausse WITH PASSWORD 'cafefaussepass';
-CREATE DATABASE cafefausse_dev OWNER cafefausse;
-\q
+4. **API Gateway**: REST API
+
+5. **CloudFront Distribution**: For frontend hosting
+
+## Environment Variables
+
+Update the `.env` file with your AWS resources:
+
+```env
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-access-key-id
+AWS_SECRET_ACCESS_KEY=your-secret-access-key
+DYNAMODB_TABLE_NAME=OnlineShopTable
+S3_BUCKET_NAME=your-online-shop-bucket
+CORS_ORIGINS=https://your-cloudfront-distribution.cloudfront.net
+ADMIN_SECRET=your-admin-secret
 ```
 
-Set the `DATABASE_URL` environment variable before running the backend, for example:
+Update the `frontend/.env` file with your API Gateway and S3 URLs:
 
-```powershell
-set DATABASE_URL=postgresql://cafefausse:cafefaussepass@localhost:5432/cafefausse_dev
+```env
+VITE_API_BASE_URL=https://your-api-gateway-url.amazonaws.com/prod
+VITE_S3_BUCKET_URL=https://your-s3-bucket.s3.amazonaws.com
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_51SrBLkCZASIgPTZB8lUtHMu8WypI4Z1qAvh1j6jTZxTy2h9EgSGVVjctEGDZ43abIK9L9rMBZgiAqlSYWKAQJCPf00Za8FS8WF
 ```
 
-If you do not have Postgres locally and want a portable DB for development, tell me and I will add a Docker Compose file for Postgres and Adminer.
-3. Backend: create virtual environment, install requirements, and run Flask
+## Deployment Steps
 
-```powershell
+1. **Create AWS Resources**:
+   - Create DynamoDB table with GSI configuration
+   - Create S3 bucket
+   - Create Lambda function
+   - Create API Gateway
+   - Create CloudFront distribution
+
+2. **Deploy Backend**:
+   ```bash
+   cd backend
+   pip install -r requirements.txt -t .
+   zip -r lambda-package.zip .
+   # Upload to Lambda via AWS Console or CLI
+   ```
+
+3. **Deploy Frontend**:
+   ```bash
+   cd frontend
+   npm install
+   npm run build
+   # Upload dist/ contents to S3 bucket configured for CloudFront
+   ```
+
+4. **Update API URLs**:
+   - Update frontend to use API Gateway URL
+   - Update CORS origins in Lambda
+
+## Local Development
+
+For local testing with AWS services:
+
+```bash
 cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-# configure DATABASE_URL in backend/.env or use the default in .env.example
-# To run the Flask app (development mode):
-set FLASK_APP=app
-set FLASK_ENV=development
-flask run
+python wsgi.py
 ```
 
-4. Frontend (React + Vite): start the dev server
+The backend will use the AWS credentials from .env to connect to DynamoDB and S3.
 
-```powershell
-cd frontend
-npm install
-npm run dev
-```
+## Notes
 
-5. Open the frontend at http://localhost:5173 and the backend API at http://127.0.0.1:5000 (API endpoints under `/api`)
-
-Notes
-
-- The frontend is a separate React app (Vite) that communicates with the Flask backend during development. If you later want a single deployable artifact, we can build the frontend and serve the static files from Flask.
-- The scaffold is intentionally minimal to get you running quickly. We'll iterate on structure, tests, and CI next.
-- If you prefer to run backend in Docker as well, I can add a Dockerfile and update docker-compose.
-
-Files added by scaffold
-
-- `backend/` — Flask app (app factory, models, API blueprint)
-
-I used Visual Studio’s AI Assistant during development, mainly for quick project scaffolding and on-the-spot guidance through the chat interface. The tool streamlined setup tasks, generated boilerplate code efficiently, and helped clarify errors or implementation decisions as I worked. Its conversational assistance made it easy to experiment with ideas and adjust code in real time. However, the main drawback was the usage limits, which quickly ran out, and the requirement for a subscription to access full functionality.
+- All data is now stored in a single DynamoDB table using single-table design patterns
+- File uploads are handled via S3
+- The application is serverless and scales automatically
+- CORS is configured for CloudFront origins

@@ -502,6 +502,62 @@ body { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Ro
   gap: 1.5rem;
 }
 
+.category {
+  border-radius: 28px;
+  padding: 1.75rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(212, 163, 115, 0.18);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.05);
+}
+
+.category-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.category-icon {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(212, 163, 115, 0.14);
+  font-size: 1.25rem;
+}
+
+.category-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 2vw, 2rem);
+}
+
+.category-toggle {
+  color: var(--accent-dark);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.category-items {
+  margin-top: 1.5rem;
+}
+
+.category-items.compact {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.category-view-all {
+  margin-top: 1rem;
+  width: fit-content;
+}
+
 .menu-card {
   display: grid;
   grid-template-rows: 220px auto;

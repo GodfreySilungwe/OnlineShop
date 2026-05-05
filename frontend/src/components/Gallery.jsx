@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { apiFetch, getImageSources } from '../utils/api'
 
 export default function Gallery() {
   const [images, setImages] = useState([])
@@ -6,7 +7,7 @@ export default function Gallery() {
   const [selectedIndex, setSelectedIndex] = useState(null)
 
   useEffect(() => {
-    fetch('/api/gallery')
+    apiFetch('gallery')
       .then((r) => r.json())
       .then(setImages)
       .catch((e) => setError(String(e)))
@@ -34,7 +35,7 @@ export default function Gallery() {
   if (error) return <div className="error-message">Error loading gallery: {error}</div>
 
   const currentImg = selectedIndex !== null ? images[selectedIndex] : null
-  const currentUrl = currentImg ? `/api/images/${encodeURIComponent(currentImg)}` : ''
+  const currentSources = currentImg ? getImageSources(currentImg) : { primary: '', fallback: '' }
 
   return (
     <div className="gallery-page">
@@ -47,12 +48,23 @@ export default function Gallery() {
       </section>
 
       <div className="gallery-grid">
-        {images.map((img, idx) => (
-          <div key={img} className="gallery-card" onClick={() => openLightbox(idx)}>
-            <img src={`/api/images/${encodeURIComponent(img)}`} alt={img} />
-            <div className="gallery-card-label">{img.replace(/[-_]/g, ' ').replace(/\.(jpg|jpeg|png|webp|avif)$/i, '')}</div>
-          </div>
-        ))}
+        {images.map((img, idx) => {
+          const imageSources = getImageSources(img)
+          return (
+            <div key={img} className="gallery-card" onClick={() => openLightbox(idx)}>
+              <img
+                src={imageSources.primary}
+                alt={img}
+                onError={(e) => {
+                  if (imageSources.fallback && e.currentTarget.src !== imageSources.fallback) {
+                    e.currentTarget.src = imageSources.fallback
+                  }
+                }}
+              />
+              <div className="gallery-card-label">{img.replace(/[-_]/g, ' ').replace(/\.(jpg|jpeg|png|webp|avif)$/i, '')}</div>
+            </div>
+          )
+        })}
         {images.length === 0 && <div>No images found.</div>}
       </div>
 
@@ -111,8 +123,13 @@ export default function Gallery() {
 
             {/* Main image */}
             <img
-              src={currentUrl}
+              src={currentSources.primary}
               alt={currentImg}
+              onError={(e) => {
+                if (currentSources.fallback && e.currentTarget.src !== currentSources.fallback) {
+                  e.currentTarget.src = currentSources.fallback
+                }
+              }}
               style={{
                 maxWidth: '100%',
                 maxHeight: '80vh',

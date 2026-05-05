@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { apiFetch } from '../utils/api'
 
 export default function Reservation() {
   const [name, setName] = useState('')
@@ -23,7 +24,7 @@ export default function Reservation() {
         time_slot: timeSlot,
         newsletter
       }
-      const res = await fetch('/api/reservations', {
+      const res = await apiFetch('reservations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
